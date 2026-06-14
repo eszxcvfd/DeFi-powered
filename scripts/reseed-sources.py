@@ -35,7 +35,7 @@ def main():
         cursor.execute("DELETE FROM sources")
         print("  - Cleared sources table")
 
-        # Define 2 clean, realistic sources
+        # Define 6 clean, realistic sources for crypto/fintech and B2B tech outreach
         new_sources = [
             {
                 "id": str(uuid4()),
@@ -69,6 +69,110 @@ def main():
                 "name": "CoinDesk Crypto Events",
                 "domain": "coindesk.com",
                 "connector_type": "ics",
+                "automation_engine": "none",
+                "authentication_mode": "none",
+                "enabled": 1,
+                "approved": 1,
+                "approved_by": "admin",
+                "approved_at": datetime.now(UTC).isoformat(),
+                "policy_json": json.dumps(
+                    {
+                        "access_mode": "feed",
+                        "quota_per_day": 500,
+                        "quota_used_today": 0,
+                        "window_start_hour": 0,
+                        "window_end_hour": 23,
+                        "retention_days": 90,
+                        "valid": True,
+                    }
+                ),
+                "rate_limit_json": "{}",
+                "secret_ciphertext": None,
+            },
+            {
+                "id": str(uuid4()),
+                "organization_id": DEV_ORGANIZATION_ID,
+                "name": "DeFi Llama Events",
+                "domain": "defillama.com",
+                "connector_type": "rss",
+                "automation_engine": "none",
+                "authentication_mode": "none",
+                "enabled": 1,
+                "approved": 1,
+                "approved_by": "admin",
+                "approved_at": datetime.now(UTC).isoformat(),
+                "policy_json": json.dumps(
+                    {
+                        "access_mode": "feed",
+                        "quota_per_day": 500,
+                        "quota_used_today": 0,
+                        "window_start_hour": 0,
+                        "window_end_hour": 23,
+                        "retention_days": 90,
+                        "valid": True,
+                    }
+                ),
+                "rate_limit_json": "{}",
+                "secret_ciphertext": None,
+            },
+            {
+                "id": str(uuid4()),
+                "organization_id": DEV_ORGANIZATION_ID,
+                "name": "Ethereum Foundation Events",
+                "domain": "ethereum.org",
+                "connector_type": "ics",
+                "automation_engine": "none",
+                "authentication_mode": "none",
+                "enabled": 1,
+                "approved": 1,
+                "approved_by": "admin",
+                "approved_at": datetime.now(UTC).isoformat(),
+                "policy_json": json.dumps(
+                    {
+                        "access_mode": "feed",
+                        "quota_per_day": 500,
+                        "quota_used_today": 0,
+                        "window_start_hour": 0,
+                        "window_end_hour": 23,
+                        "retention_days": 90,
+                        "valid": True,
+                    }
+                ),
+                "rate_limit_json": "{}",
+                "secret_ciphertext": None,
+            },
+            {
+                "id": str(uuid4()),
+                "organization_id": DEV_ORGANIZATION_ID,
+                "name": "Fintech Futures Events",
+                "domain": "fintechfutures.com",
+                "connector_type": "rss",
+                "automation_engine": "none",
+                "authentication_mode": "none",
+                "enabled": 1,
+                "approved": 1,
+                "approved_by": "admin",
+                "approved_at": datetime.now(UTC).isoformat(),
+                "policy_json": json.dumps(
+                    {
+                        "access_mode": "feed",
+                        "quota_per_day": 500,
+                        "quota_used_today": 0,
+                        "window_start_hour": 0,
+                        "window_end_hour": 23,
+                        "retention_days": 90,
+                        "valid": True,
+                    }
+                ),
+                "rate_limit_json": "{}",
+                "secret_ciphertext": None,
+            },
+            {
+                "id": str(uuid4()),
+                "organization_id": DEV_ORGANIZATION_ID,
+                "name": "Product Hunt Product Launches",
+                "domain": "producthunt.com",
+                "connector_type": "rss",
                 "automation_engine": "none",
                 "authentication_mode": "none",
                 "enabled": 1,
