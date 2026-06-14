@@ -36,7 +36,7 @@ def _campaign() -> Campaign:
     )
 
 
-def _event(title: str = "B2B Payments Webinar EU") -> CanonicalEvent:
+def _event(title: str = "Cross-border payments live webinar EU") -> CanonicalEvent:
     now = datetime.now(UTC)
     return CanonicalEvent(
         id=uuid4(),
@@ -45,7 +45,7 @@ def _event(title: str = "B2B Payments Webinar EU") -> CanonicalEvent:
         canonical_title=title,
         source_url="https://example.com/e/1",
         observed_at=now,
-        description="Partnership-focused webinar on cross-border payments",
+        description="Partnership-focused session on cross-border payments",
         organizer="Payments Org",
         region="EU",
         starts_at=now,
@@ -73,6 +73,26 @@ def test_generate_audience_ready():
     h = analysis.hypotheses[0]
     assert h.reason
     assert len(h.evidence) >= 1
+    assert all(ev.kind == "observed" for ev in h.evidence)
+
+
+def test_no_partner_hypothesis_from_campaign_focus_alone():
+    e = CanonicalEvent(
+        id=uuid4(),
+        organization_id=uuid4(),
+        campaign_id=uuid4(),
+        canonical_title="YC AI startup demo day",
+        source_url="https://news.ycombinator.com/item?id=1",
+        observed_at=datetime.now(UTC),
+        description="Founders pitch software tools",
+        region="US",
+    )
+    camp = _campaign()
+    ctx = GenerationContext(event=e, campaign=camp, observations=())
+    analysis = generate_audience_analysis(ctx)
+    names = " ".join(h.segment_name for h in analysis.hypotheses).lower()
+    assert "partnership and ecosystem leaders" not in names
+    assert "regional referral network" not in names
 
 
 def test_generate_audience_empty_sparse():

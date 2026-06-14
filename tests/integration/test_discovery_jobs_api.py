@@ -40,6 +40,13 @@ async def test_discovery_job_lifecycle_with_mock_worker(client):
     assert body["status"] in ("succeeded", "partial", "running", "failed")
     assert "job.started" in str(body["progress"].get("events", []))
 
+    events = await client.get(f"/campaigns/{cid}/events", params={"include_score": "false"})
+    assert events.status_code == 200
+    titles = [e["canonical_title"] for e in events.json()]
+    assert len(titles) >= 1
+    assert not any("Deterministic mock" in t for t in titles)
+    assert any("success-mock-example-com" in t for t in titles)
+
 
 @pytest.mark.asyncio
 async def test_create_discovery_job_redis_down(client, monkeypatch):

@@ -9,6 +9,17 @@ def anyio_backend():
     return "asyncio"
 
 
+@pytest.fixture(autouse=True)
+def _browser_automation_stub(monkeypatch):
+    monkeypatch.setenv("LIVELEAD_BROWSER_AUTOMATION_MODE", "stub")
+    monkeypatch.setenv("LIVELEAD_DISCOVERY_USE_MOCK_CONNECTORS", "true")
+    from livelead.infrastructure.browser.factory import reset_runtime_cache_for_tests
+
+    reset_runtime_cache_for_tests()
+    yield
+    reset_runtime_cache_for_tests()
+
+
 @pytest.fixture
 async def client(tmp_path, monkeypatch):
     db = tmp_path / "test.sqlite3"
