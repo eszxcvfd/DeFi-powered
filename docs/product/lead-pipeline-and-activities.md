@@ -34,10 +34,14 @@ This product slice does not yet cover:
 - Reminder inboxes or overdue follow-up workflows.
 - CSV import/export or CRM synchronization.
 - Dashboard or funnel reporting. Those read-model behaviors are defined in
-  `docs/product/dashboard-overview-and-freshness.md` rather than this lead
+  `docs/product/dashboard-overview-and-freshness.md` and
+  `docs/product/funnel-reporting-and-conversion-steps.md` rather than this lead
   baseline.
 - Full merge-resolution workflow for complex duplicates.
-- Automatic outreach, browser-assisted sending, or outcome automation.
+- Automatic outreach, browser-assisted sending, or outcome automation. Manual
+  outcome tracking is defined in
+  `docs/product/lead-outcomes-and-conversion-tracking.md` rather than this lead
+  baseline.
 
 ## Contract Rules
 

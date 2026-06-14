@@ -27,13 +27,18 @@ This product slice covers:
 
 This product slice does not yet cover:
 
-- Funnel visualization or conversion-step reporting.
-- Performance-by-source or campaign-comparison reporting.
+- Funnel visualization or conversion-step reporting. The first funnel slice is
+  defined in `docs/product/funnel-reporting-and-conversion-steps.md`.
+- Performance-by-source or campaign-comparison reporting. Those grouped
+  reporting behaviors are defined in
+  `docs/product/source-performance-and-reporting.md`.
 - Content-effectiveness comparison by template, tone, or variant.
-- CSV, PDF, or printable report export.
+- CSV, PDF, or printable report export. Those behaviors are defined in
+  `docs/product/report-export-and-printing.md`.
 - Email digests, notification preferences, or scheduled report delivery.
-- New watchlist, outcome-entry, or CRM-sync workflows created only to satisfy a
-  dashboard card.
+- New watchlist or CRM-sync workflows created only to satisfy a dashboard card.
+- Manual outcome-entry workflows, which are defined in
+  `docs/product/lead-outcomes-and-conversion-tracking.md`.
 
 ## Contract Rules
 

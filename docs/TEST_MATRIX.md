@@ -32,7 +32,13 @@ implemented until tests or validation evidence exist.
 | US-011 | Approved-content copy/export, used-state updates, and handoff audit trail | yes | yes | yes | yes | implemented | `./scripts/verify-us-011.sh`; handoff API + `frontend/e2e/content-handoff.spec.ts` |
 | US-012 | Lead creation, default pipeline states, duplicate guardrails, and baseline activity history | yes | yes | yes | yes | implemented | `./scripts/verify-us-012.sh`; lead API + `frontend/e2e/lead-pipeline.spec.ts` |
 | US-013 | Lead-linked follow-up reminders, due/overdue queue, and baseline in-app reminder visibility | yes | yes | yes | yes | implemented | `./scripts/verify-us-013.sh`; reminders API + `frontend/e2e/follow-up-reminders.spec.ts` |
-| US-014 | Dashboard overview cards, widget freshness, and explicit empty or unavailable metric states | yes | yes | yes | yes | planned |  |
+| US-014 | Dashboard overview cards, widget freshness, and explicit empty or unavailable metric states | yes | yes | yes | yes | implemented | verify-us-014.sh; /reporting/dashboard-overview + dashboard-overview.spec.ts |
+| US-015 | Manual lead outcomes, timeline outcome history, and baseline content-linked conversion tracking | yes | yes | yes | yes | implemented | verify-us-015.sh; POST /leads/{id}/outcomes + lead-outcomes.spec.ts |
+| US-016 | Funnel reporting from event to lead to contact/response/meeting/opportunity with explicit cohort handling | yes | yes | yes | yes | implemented | verify-us-016.sh; GET /reports/funnel + funnel-report.spec.ts |
+| US-017 | Source-performance reporting by platform, connector, campaign, and industry with attributable grouped metrics | yes | yes | yes | yes | implemented | verify-us-017.sh; GET /reports/source-performance + source-performance.spec.ts |
+| US-018 | Content-effectiveness reporting by content type, tone, and template metadata with linked outcome attribution | yes | yes | yes | yes | implemented | verify-us-018.sh; GET /reports/content-effectiveness + content-effectiveness.spec.ts |
+| US-019 | Report export for dashboard and grouped reporting with CSV plus printable output and preserved filter context | yes | yes | yes | yes | implemented | verify-us-019.sh; GET /reports/export + report-export.spec.ts |
+| US-020 | Supervised browser session launch, isolated session status, and safe stop control from UI entrypoints | yes | yes | yes | yes | implemented | verify-us-020.sh; POST/GET /browser-sessions + browser-session.spec.ts |
 
 ## Evidence Rules
 

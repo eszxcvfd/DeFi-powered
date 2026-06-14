@@ -32,7 +32,9 @@ This product slice does not yet cover:
 - Scheduler or cron-based discovery runs.
 - AI-assisted query expansion.
 - Full event-detail, ranking, or scoring UX.
-- Interactive login or headed browser sessions.
+- Interactive login or headed browser sessions. The first supervised session
+  slice is defined in
+  `docs/product/browser-session-console-and-isolation.md`.
 
 ## Contract Rules
 

@@ -45,14 +45,38 @@ See `docs/BOUNDARIES.md` and `src/livelead/boundaries/` (auth, tenant, RBAC, aud
 ./scripts/smoke-worker.sh        # requires Redis
 ./scripts/smoke-scheduler.sh
 ./scripts/smoke-browser-worker.sh
+./scripts/install-browser-runtime.sh   # Playwright Python + Chromium for real browser sessions (US-020)
 ```
+
+### Real browser sessions (US-020)
+
+Default API runtime uses **Playwright** (`LIVELEAD_BROWSER_AUTOMATION_MODE=playwright`): each session opens an isolated Chromium context and navigates to the event URL (read-only; no form actions).
+
+- `LIVELEAD_BROWSER_AUTOMATION_MODE=stub` — tests/CI only (no Chromium).
+- `LIVELEAD_PLAYWRIGHT_CHROMIUM_EXECUTABLE` — system Chrome (see `scripts/playwright-install.sh`).
+- `LIVELEAD_CLOAKBROWSER_EXECUTABLE` — CloakBrowser binary (e.g. `/usr/local/bin/cloakbrowser`) when connector `automation_engine` is `cloakbrowser`.
+- `LIVELEAD_BROWSER_HEADLESS=false` — headed window for local supervision.
+
+**Config files (paths):**
+
+| File | Location |
+| --- | --- |
+| Main app env | **Repo root** `.env` (copy from `.env.example`) — e.g. `DeFi-powered/.env` |
+| Chrome path (auto) | `frontend/.playwright-browser.env` (created by `./scripts/playwright-install.sh`) |
+| Example template | `.env.example` at repo root |
+
+If you see `Executable doesn't exist at .../ms-playwright/chromium_headless_shell-...`, set `LIVELEAD_PLAYWRIGHT_CHROMIUM_EXECUTABLE=/usr/bin/google-chrome-stable` in root `.env` or run `./scripts/playwright-install.sh`, then restart the API.
+
+### Real discovery (RSS/Atom/ICS)
+
+Campaign **Run discovery** fetches real feeds when `LIVELEAD_DISCOVERY_USE_MOCK_CONNECTORS=false` (default in repo-root `.env`). Settings load from that file even if the worker was started from another directory (`env_bootstrap.load_repo_dotenv`). **Restart the dramatiq worker** after changing `.env` — workers do not hot-reload config. Known domains map to public RSS URLs (`src/livelead/infrastructure/connectors/feed_urls.py`); override per source via Admin `rate_limit_json`: `{"feed_url": "https://..."}`. Items are filtered by campaign positive/exclude keywords. Tests set `LIVELEAD_DISCOVERY_USE_MOCK_CONNECTORS=true`. Fixture titles (B2B Payments Webinar, SaaS Growth Meetup, …) only come from mock mode or `*-mock.example.com` sources.
 
 ## Process entrypoints
 
 | Process | Command |
 | --- | --- |
 | web-api | `uvicorn apps.api.main:app` |
-| worker | `dramatiq apps.worker.tasks` |
+| worker | `./scripts/run-worker.sh` (wraps `dramatiq apps.worker.tasks`) |
 | scheduler | `python -m apps.scheduler.main` |
 | browser-worker | `python -m apps.browser_worker.main` |
 | frontend | `npm --prefix frontend run dev` |

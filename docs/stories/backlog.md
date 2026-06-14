@@ -14,7 +14,7 @@ the work is selected or when a product decision needs a durable place to land.
 | E01 Discovery MVP | Campaign/ICP, source registry and policy, API/RSS connector, browser adapter contract, discovery job progress, event normalization, deduplication, event list/detail. | active |
 | E02 Intelligence | Event scoring, audience hypothesis, evidence linking, AI provider abstraction, engagement plan, generated content, review workflow, anti-spam guardrails. | active |
 | E03 Lead And Reporting | Lead pipeline, duplicate detection, activities, follow-up reminders, dashboard, funnel, source performance, export. | active |
-| E04 Browser-Assisted Operations | Headed browser session console, profile lifecycle, confirmation workflow, screenshots/traces, optional CloakBrowser adapter review. | unsliced |
+| E04 Browser-Assisted Operations | Headed browser session console, profile lifecycle, confirmation workflow, screenshots/traces, optional CloakBrowser adapter review. | active |
 | E05 Hardening | Performance, security, observability, backup/restore, UAT, and production readiness. | unsliced |
 
 ## First Story Candidates
@@ -51,3 +51,23 @@ the work is selected or when a product decision needs a durable place to land.
   overview with trustworthy summary cards, freshness metadata, and explicit
   empty or unavailable states before funnel, source-performance, or export
   reporting.
+- `US-015-lead-outcomes-baseline`: add the first manual outcome-tracking slice
+  for contact, response, meeting, and opportunity milestones before funnel,
+  content-effectiveness, or CRM-sync stories.
+- `US-016-funnel-baseline`: add the first conversion funnel report from event to
+  lead to contact/response/meeting/opportunity with explicit cohort rules before
+  source-performance, content-effectiveness, or export stories.
+- `US-017-source-performance-baseline`: add the first grouped source-performance
+  report by platform, connector, campaign, and industry before
+  content-effectiveness or export stories.
+- `US-018-content-effectiveness-baseline`: add the first grouped
+  content-effectiveness report by content type, tone, and template metadata
+  before export stories.
+- `US-019-report-export-baseline`: add the first report-export slice for
+  dashboard, funnel, source-performance, and content-effectiveness views with
+  CSV and printable output before scheduled delivery or external report-sync
+  stories.
+- `US-020-browser-session-baseline`: add the first supervised browser-session
+  slice with session launch, isolation, live status, and safe stop before
+  allowlisted actions, confirmation flows, profile lifecycle, or debug-artifact
+  stories.

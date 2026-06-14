@@ -32,7 +32,9 @@ This product slice does not yet cover:
 - Audience hypothesis generation.
 - Engagement content, review, or send flows.
 - Bulk watchlist, reminders, or bulk re-score actions.
-- Browser-assisted session launch from event detail.
+- Browser-assisted session launch from event detail. That first supervised
+  session slice is defined in
+  `docs/product/browser-session-console-and-isolation.md`.
 - Calendar export, CRM export, or lead conversion workflows.
 
 ## Contract Rules

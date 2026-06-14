@@ -28,7 +28,8 @@ This product slice does not yet cover:
 
 - Live discovery execution against external sources.
 - Full browser recipe authoring UX.
-- Interactive login sessions.
+- Interactive login sessions. The first supervised browser-session slice is
+  defined in `docs/product/browser-session-console-and-isolation.md`.
 - CAPTCHA handling workflows beyond deny or safe-stop requirements.
 - Connector health analytics dashboards.
 

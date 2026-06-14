@@ -32,8 +32,8 @@ without depending on later funnel or export stories.
 ## Commands
 
 ```text
-- ./scripts/verify-us-014.sh — planned story verification chain for dashboard unit/integration coverage
-- frontend/e2e/dashboard-overview.spec.ts — planned dashboard browser proof
+- ./scripts/verify-us-014.sh — story verification chain for dashboard unit/integration/e2e coverage
+- frontend/e2e/dashboard-overview.spec.ts — dashboard browser proof
 ```
 
 ## Acceptance Evidence

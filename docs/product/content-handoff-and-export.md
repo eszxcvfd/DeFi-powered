@@ -30,6 +30,8 @@ This product slice does not yet cover:
 - Full analytics on downstream usage effectiveness.
 - Lead creation or pipeline actions triggered by content usage.
 - Bulk external publishing or messaging.
+- Reporting-view export such as dashboard, funnel, or grouped report downloads.
+  Those behaviors are defined in `docs/product/report-export-and-printing.md`.
 
 ## Contract Rules
 
