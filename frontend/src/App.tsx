@@ -3,6 +3,7 @@ import AppLayout from "./AppLayout";
 import CampaignDetail from "./pages/CampaignDetail";
 import CampaignList from "./pages/CampaignList";
 import CampaignWizard from "./pages/CampaignWizard";
+import AdminBrowserProfiles from "./pages/AdminBrowserProfiles";
 import AdminConnectors from "./pages/AdminConnectors";
 import CampaignEvents from "./pages/CampaignEvents";
 import EventContentStudioPage from "./pages/EventContentStudioPage";
@@ -34,6 +35,7 @@ export default function App() {
         <Route path="browser" element={<BrowserSessionPage />} />
         <Route path="admin" element={<AdminConnectors />} />
         <Route path="admin/connectors" element={<AdminConnectors />} />
+        <Route path="admin/browser-profiles" element={<AdminBrowserProfiles />} />
       </Route>
     </Routes>
   );

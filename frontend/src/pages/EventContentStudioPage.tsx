@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import {
   approveContent,
   exportContentUrl,
@@ -13,6 +13,10 @@ import {
   submitForReview,
   type ContentDraft,
 } from "@/api/content";
+import { AppPageHeader } from "@/components/layout/AppPageHeader";
+import { AppPageShell, PAGE_CONTENT_CLASS } from "@/components/layout/AppPageShell";
+import { AppSection } from "@/components/layout/AppSection";
+import { ListPagination, paginateSlice } from "@/components/ListPagination";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
 
@@ -31,6 +35,7 @@ export default function EventContentStudioPage() {
   const [editText, setEditText] = useState("");
   const [rejectNote, setRejectNote] = useState("");
   const [rejectingId, setRejectingId] = useState<string | null>(null);
+  const [draftsPage, setDraftsPage] = useState(1);
 
   useEffect(() => {
     if (!id) return;
@@ -46,24 +51,27 @@ export default function EventContentStudioPage() {
 
   if (loading) {
     return (
-      <div className="p-10 flex justify-center">
-        <Loader2 className="size-5 animate-spin" />
-      </div>
+      <AppPageShell>
+        <div className="p-10 flex justify-center">
+          <Loader2 className="size-5 animate-spin" />
+        </div>
+      </AppPageShell>
     );
   }
 
   return (
-    <div className="p-8 max-w-5xl mx-auto" data-testid="content-studio">
-      <Link to={`/events/${id}`} className="text-xs text-[var(--color-muted)]">
-        ← Event detail
-      </Link>
-      <h1 className="text-xl font-bold mt-4">Content studio (US-009 / US-010 / US-011)</h1>
-      <p className="text-sm text-slate-500 mt-1">Human-controlled handoff — copy/export does not send messages.</p>
-      {error && <p className="text-red-600 text-sm mt-2">{error}</p>}
+    <AppPageShell testId="content-studio">
+      <AppPageHeader
+        backTo={`/events/${id}`}
+        backLabel="Event"
+        title="Content studio"
+        subtitle="Generate, review, and export drafts. Copy/export does not send messages."
+      />
+      <div className={PAGE_CONTENT_CLASS}>
+      {error && <p className="text-red-600 text-sm mb-4">{error}</p>}
 
       {context && (
-        <section className="mt-6 border border-slate-200 p-5 rounded-sm bg-white" data-testid="content-context-panel">
-          <h2 className="text-sm font-bold uppercase tracking-wider text-slate-700 mb-3">Generation context</h2>
+        <AppSection title="Generation context" testId="content-context-panel" className="mb-6">
           <dl className="grid grid-cols-2 gap-2 text-sm text-slate-600">
             <div>
               <dt className="text-xs text-slate-400">Event</dt>
@@ -86,7 +94,7 @@ export default function EventContentStudioPage() {
               <dd>{context.plan_task_count}</dd>
             </div>
           </dl>
-        </section>
+        </AppSection>
       )}
 
       <section className="mt-6 border border-slate-200 p-5 rounded-sm bg-white" data-testid="content-settings">
@@ -168,7 +176,8 @@ export default function EventContentStudioPage() {
             No drafts yet.
           </p>
         ) : (
-          drafts.map((d) => (
+          <>
+          {paginateSlice(drafts, draftsPage).map((d) => (
             <article key={d.id} className="border border-slate-200 p-5 rounded-sm bg-white" data-testid="content-draft">
               <div className="flex justify-between text-xs text-slate-500 mb-2">
                 <span>
@@ -378,9 +387,12 @@ export default function EventContentStudioPage() {
                 </>
               )}
             </article>
-          ))
+          ))}
+          <ListPagination page={draftsPage} totalItems={drafts.length} onPageChange={setDraftsPage} testId="content-drafts-pagination" />
+          </>
         )}
       </section>
-    </div>
+      </div>
+    </AppPageShell>
   );
 }

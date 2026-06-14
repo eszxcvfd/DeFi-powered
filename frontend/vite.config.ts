@@ -13,7 +13,10 @@ const EVENT_ID_API = new RegExp(
 );
 const CONTENT_DRAFT_API = new RegExp(`^/content/${UUID}(/approve|/reject|/export)?$`, "i");
 const LEAD_ID_API = new RegExp(`^/leads(?:/${UUID}(?:/outcomes)?)?$`, "i");
-const BROWSER_SESSION_API = new RegExp(`^/browser-sessions(?:/${UUID}(?:/stop|/stream)?)?$`, "i");
+const BROWSER_SESSION_API = new RegExp(
+  `^/browser-sessions(?:/${UUID}(?:/(?:stop|stream|actions|debug|artifacts(?:/screenshot|/${UUID}/download)?|confirmations/${UUID}/(?:confirm|cancel)))?)?$`,
+  "i",
+);
 const ADMIN_CONNECTOR_ID = new RegExp(`^/admin/connectors/${UUID}$`, "i");
 
 function wantsHtml(req: { headers?: Record<string, string> }) {
@@ -54,10 +57,11 @@ function eventsProxyBypass(req: { method?: string; url?: string; headers?: Recor
 
 function adminProxyBypass(req: { method?: string; url?: string; headers?: Record<string, string> }) {
   const path = (req.url ?? "").split("?")[0];
-  if (path === "/admin" || path === "/admin/connectors") {
+  if (path === "/admin" || path === "/admin/connectors" || path === "/admin/browser-profiles") {
     if (req.method === "GET" && wantsHtml(req)) return path;
     return null;
   }
+  if (path.startsWith("/admin/browser-profiles/")) return null;
   if (ADMIN_CONNECTOR_ID.test(path)) return null;
   return path;
 }
@@ -95,8 +99,8 @@ const proxyConfig = {
     target: API,
     bypass(req: { method?: string; url?: string; headers?: Record<string, string> }) {
       const path = (req.url ?? "").split("?")[0];
-      if (LEAD_ID_API.test(path)) return null;
       if (path === "/leads" && req.method === "GET" && wantsHtml(req)) return path;
+      if (LEAD_ID_API.test(path)) return null;
       return path;
     },
   },

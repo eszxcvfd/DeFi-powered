@@ -2,6 +2,10 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { getLead, listLeads, patchLead, recordLeadOutcome } from "@/api/leads";
 import { completeReminder, listReminderQueue, type ReminderQueueItem } from "@/api/reminders";
+import { AppPageHeader } from "@/components/layout/AppPageHeader";
+import { AppPageShell, PAGE_CONTENT_CLASS } from "@/components/layout/AppPageShell";
+import { AppSection } from "@/components/layout/AppSection";
+import { ListPagination, paginateSlice } from "@/components/ListPagination";
 import { Button } from "@/components/ui/button";
 import { latestOutcomeBadgeText } from "@/lib/leadActivityDisplay";
 import { leadPrimaryLabel, leadSecondaryLine } from "@/lib/leadDisplay";
@@ -170,6 +174,9 @@ export default function LeadsPipelinePage() {
   const [outcomeType, setOutcomeType] = useState("contact");
   const [outcomeNote, setOutcomeNote] = useState("");
   const [outcomeSavedFlash, setOutcomeSavedFlash] = useState<string | null>(null);
+  const [leadsPage, setLeadsPage] = useState(1);
+  const [reminderPage, setReminderPage] = useState(1);
+  const [kanbanPages, setKanbanPages] = useState<Record<string, number>>({});
 
   const refresh = () =>
     Promise.all([listLeads(), listReminderQueue()])
@@ -200,6 +207,9 @@ export default function LeadsPipelinePage() {
     if (!detail || !outcomeSavedFlash) return;
     document.getElementById("lead-detail-panel")?.scrollIntoView({ behavior: "smooth", block: "start" });
   }, [detail, outcomeSavedFlash]);
+
+  const pagedLeads = useMemo(() => paginateSlice(leads, leadsPage), [leads, leadsPage]);
+  const pagedQueue = useMemo(() => paginateSlice(queue, reminderPage), [queue, reminderPage]);
 
   const byStage = useMemo(() => {
     const map: Record<string, LeadSummary[]> = {};
@@ -272,30 +282,34 @@ export default function LeadsPipelinePage() {
   }
 
   return (
-    <div className="p-8 max-w-[1400px] mx-auto" data-testid="leads-pipeline">
-      <div className="flex items-center justify-between gap-4 mb-6">
-        <h1 className="text-xl font-bold">Lead pipeline</h1>
-        <div className="flex gap-2">
-          <Button
-            type="button"
-            size="sm"
-            variant={view === "table" ? "default" : "ghost"}
-            data-testid="leads-view-table"
-            onClick={() => setView("table")}
-          >
-            Table
-          </Button>
-          <Button
-            type="button"
-            size="sm"
-            variant={view === "kanban" ? "default" : "ghost"}
-            data-testid="leads-view-kanban"
-            onClick={() => setView("kanban")}
-          >
-            Kanban
-          </Button>
-        </div>
-      </div>
+    <AppPageShell testId="leads-pipeline">
+      <AppPageHeader
+        title="Lead pipeline"
+        subtitle="Stages, outcomes, and follow-up reminders."
+        actions={
+          <>
+            <Button
+              type="button"
+              size="sm"
+              variant={view === "table" ? "default" : "ghost"}
+              data-testid="leads-view-table"
+              onClick={() => setView("table")}
+            >
+              Table
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant={view === "kanban" ? "default" : "ghost"}
+              data-testid="leads-view-kanban"
+              onClick={() => setView("kanban")}
+            >
+              Kanban
+            </Button>
+          </>
+        }
+      />
+      <div className={PAGE_CONTENT_CLASS}>
       {error && (
         <p className="text-sm text-red-600 mb-4" data-testid="leads-error">
           {error}
@@ -310,13 +324,12 @@ export default function LeadsPipelinePage() {
         </p>
       )}
 
-      <section className="mb-6 border border-slate-200 p-4 rounded-sm bg-white" data-testid="reminder-queue">
-        <h2 className="text-xs font-bold uppercase tracking-wider text-slate-600 mb-2">Due follow-ups</h2>
+      <AppSection title="Due follow-ups" testId="reminder-queue" className="mb-6">
         {queue.length === 0 ? (
           <p className="text-sm text-slate-500">No due or overdue reminders.</p>
         ) : (
           <ul className="text-sm space-y-2">
-            {queue.map((item) => (
+            {pagedQueue.map((item) => (
               <li key={item.id} className="flex flex-wrap items-center gap-2">
                 <span className="font-medium">{item.lead_display_name}</span>
                 <span className="text-xs text-slate-500">
@@ -346,9 +359,16 @@ export default function LeadsPipelinePage() {
             ))}
           </ul>
         )}
-      </section>
+        <ListPagination
+          page={reminderPage}
+          totalItems={queue.length}
+          onPageChange={setReminderPage}
+          testId="reminder-queue-pagination"
+        />
+      </AppSection>
 
       {view === "table" ? (
+        <>
         <table className="w-full text-sm border border-slate-200" data-testid="leads-table">
           <thead className="bg-slate-50 text-left text-xs uppercase text-slate-500">
             <tr>
@@ -359,7 +379,7 @@ export default function LeadsPipelinePage() {
             </tr>
           </thead>
           <tbody>
-            {leads.map((l) => (
+            {pagedLeads.map((l) => (
               <tr
                 key={l.id}
                 className="border-t border-slate-100 cursor-pointer hover:bg-slate-50"
@@ -396,10 +416,14 @@ export default function LeadsPipelinePage() {
             ))}
           </tbody>
         </table>
+        <ListPagination page={leadsPage} totalItems={leads.length} onPageChange={setLeadsPage} testId="leads-table-pagination" />
+        </>
       ) : (
         <div className="flex gap-4 overflow-x-auto pb-6 select-none" data-testid="leads-kanban">
           {STAGE_ORDER.map((stage) => {
             const stageLeads = byStage[stage] || [];
+            const stagePage = kanbanPages[stage] ?? 1;
+            const pagedStageLeads = paginateSlice(stageLeads, stagePage);
             const theme = STAGE_THEMES[stage] || STAGE_THEMES.newly_discovered;
             return (
               <div
@@ -418,12 +442,12 @@ export default function LeadsPipelinePage() {
 
                 {/* Cards List */}
                 <ul className="space-y-3 flex-1 overflow-y-auto max-h-[600px] pr-1">
-                  {stageLeads.length === 0 ? (
+                  {pagedStageLeads.length === 0 ? (
                     <li className="text-center py-12 text-xs text-slate-400 border border-dashed border-slate-200 rounded-xl bg-slate-50/20">
-                      No leads in this stage
+                      No leads on this page
                     </li>
                   ) : (
-                    stageLeads.map((l) => {
+                    pagedStageLeads.map((l) => {
                       const isSelected = selectedId === l.id;
                       const isOverdue = l.reminder?.state === "overdue" || l.reminder?.state === "due";
 
@@ -526,6 +550,13 @@ export default function LeadsPipelinePage() {
                     })
                   )}
                 </ul>
+                <ListPagination
+                  page={stagePage}
+                  totalItems={stageLeads.length}
+                  onPageChange={(p) => setKanbanPages((prev) => ({ ...prev, [stage]: p }))}
+                  testId={`leads-kanban-pagination-${stage}`}
+                  className="mt-2 pt-2 border-t-0"
+                />
               </div>
             );
           })}
@@ -665,6 +696,7 @@ export default function LeadsPipelinePage() {
           </div>
         </section>
       )}
-    </div>
+      </div>
+    </AppPageShell>
   );
 }

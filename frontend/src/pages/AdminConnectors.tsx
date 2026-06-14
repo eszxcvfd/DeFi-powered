@@ -1,18 +1,22 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { createConnector, listConnectors } from "@/api/connectors";
+import { AppPageHeader } from "@/components/layout/AppPageHeader";
+import { AppPageShell, PAGE_CONTENT_CLASS } from "@/components/layout/AppPageShell";
+import { AppSection } from "@/components/layout/AppSection";
+import { ListPagination, paginateSlice } from "@/components/ListPagination";
+import { LIST_PAGE_SIZE } from "@/constants/listPageSize";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { ConnectorView } from "@/types/connector";
-import { Plus, ShieldAlert, Key, Chrome, Rss, Link2, Settings2, Database, ShieldCheck, ChevronLeft, ChevronRight } from "lucide-react";
+import { Plus, ShieldAlert, Key, Chrome, Rss, Link2, Settings2, Database, ShieldCheck } from "lucide-react";
 
 export default function AdminConnectors() {
   const [items, setItems] = useState<ConnectorView[]>([]);
   const [name, setName] = useState("");
   const [domain, setDomain] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
-
-  const ITEMS_PER_PAGE = 10;
+  const [page, setPage] = useState(1);
 
   async function refresh() {
     setItems(await listConnectors());
@@ -22,16 +26,7 @@ export default function AdminConnectors() {
     void refresh();
   }, []);
 
-  const totalPages = Math.ceil(items.length / ITEMS_PER_PAGE);
-  const indexOfLastItem = currentPage * ITEMS_PER_PAGE;
-  const indexOfFirstItem = indexOfLastItem - ITEMS_PER_PAGE;
-  const currentItems = items.slice(indexOfFirstItem, indexOfLastItem);
-
-  useEffect(() => {
-    if (currentPage > 1 && currentPage > totalPages) {
-      setCurrentPage(1);
-    }
-  }, [items.length, totalPages, currentPage]);
+  const currentItems = paginateSlice(items, page);
 
   async function addRss() {
     const newConn = await createConnector({
@@ -54,8 +49,8 @@ export default function AdminConnectors() {
     const index = updatedItems.findIndex(item => item.id === newConn.id);
     if (index !== -1) {
       // Calculate which page this index corresponds to
-      const targetPage = Math.floor(index / ITEMS_PER_PAGE) + 1;
-      setCurrentPage(targetPage);
+      const targetPage = Math.floor(index / LIST_PAGE_SIZE) + 1;
+      setPage(targetPage);
     }
   }
 
@@ -86,23 +81,23 @@ export default function AdminConnectors() {
   };
 
   return (
-    <div className="p-8 max-w-5xl mx-auto" data-testid="admin-connectors">
-      {/* Header */}
-      <div className="border-b border-slate-200 pb-5 mb-8">
-        <div className="flex items-center gap-3">
-          <Settings2 className="size-6 text-slate-700" strokeWidth={1.5} />
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">Connector Registry</h1>
-        </div>
-        <p className="text-sm text-[var(--color-muted)] mt-1.5">Governance and connector policy enforcement — no live discovery.</p>
-      </div>
-
-      {/* Two-column layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-        {/* Left Column: Form Card */}
-        <div className="bg-white border border-slate-200 p-6 rounded-sm shadow-sm space-y-5">
-          <div className="border-b border-slate-100 pb-2.5">
-            <h2 className="text-sm font-bold uppercase tracking-wider text-slate-700">Add Connector</h2>
-          </div>
+    <AppPageShell testId="admin-connectors">
+      <AppPageHeader
+        title="Connector registry"
+        subtitle="Governance and connector policy — no live discovery from this screen."
+        meta={
+          <span className="flex items-center gap-3 text-xs">
+            <Link to="/admin/browser-profiles" className="underline text-slate-600" data-testid="nav-browser-profiles">
+              Browser profiles
+            </Link>
+            <Settings2 className="size-4 text-slate-400 inline" />
+          </span>
+        }
+      />
+      <div className={PAGE_CONTENT_CLASS}>
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
+        <div className="xl:col-span-4">
+        <AppSection title="Add connector">
           
           <div className="space-y-4">
             <div>
@@ -136,16 +131,12 @@ export default function AdminConnectors() {
               Add RSS Source
             </Button>
           </div>
+        </AppSection>
         </div>
 
-        {/* Right Column: Registry Table */}
-        <div className="lg:col-span-2 bg-white border border-slate-200 rounded-sm overflow-hidden flex flex-col justify-between">
-          <div>
-            <div className="p-4 bg-slate-50 border-b border-slate-200">
-              <h2 className="text-sm font-bold uppercase tracking-wider text-slate-700">Registered Connectors</h2>
-            </div>
-            
-            <table className="w-full text-sm text-left border-collapse">
+        <div className="xl:col-span-8">
+        <AppSection title="Registered connectors" className="flex flex-col">
+            <table className="w-full text-sm text-left">
               <thead>
                 <tr className="bg-slate-50/50 border-b border-slate-200 text-slate-500 font-mono uppercase tracking-wider text-xs">
                   <th className="px-5 py-3 font-semibold">Name</th>
@@ -190,41 +181,12 @@ export default function AdminConnectors() {
                 )}
               </tbody>
             </table>
-          </div>
 
-          {/* Pagination Toolbar */}
-          {totalPages > 1 && (
-            <div className="flex items-center justify-between border-t border-slate-200 bg-slate-50/50 px-5 py-3 text-xs">
-              <span className="text-slate-500 font-mono">
-                Showing {indexOfFirstItem + 1}–{Math.min(indexOfLastItem, items.length)} of {items.length} connectors
-              </span>
-              <div className="flex items-center gap-1">
-                <Button
-                  variant="ghost"
-                  disabled={currentPage === 1}
-                  onClick={() => setCurrentPage(currentPage - 1)}
-                  className="h-7 px-2.5 rounded-sm border border-slate-200 disabled:opacity-40 text-slate-700 hover:bg-slate-100 flex items-center gap-1 font-semibold text-[11px]"
-                >
-                  <ChevronLeft className="size-3.5" />
-                  Previous
-                </Button>
-                <span className="px-2 text-slate-600 font-mono text-[11px]">
-                  {currentPage} / {totalPages}
-                </span>
-                <Button
-                  variant="ghost"
-                  disabled={currentPage === totalPages}
-                  onClick={() => setCurrentPage(currentPage + 1)}
-                  className="h-7 px-2.5 rounded-sm border border-slate-200 disabled:opacity-40 text-slate-700 hover:bg-slate-100 flex items-center gap-1 font-semibold text-[11px]"
-                >
-                  Next
-                  <ChevronRight className="size-3.5" />
-                </Button>
-              </div>
-            </div>
-          )}
+          <ListPagination page={page} totalItems={items.length} onPageChange={setPage} testId="admin-connectors-pagination" />
+        </AppSection>
         </div>
       </div>
-    </div>
+      </div>
+    </AppPageShell>
   );
 }

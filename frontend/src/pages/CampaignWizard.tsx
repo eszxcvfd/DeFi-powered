@@ -3,6 +3,8 @@ import { Link, useNavigate } from "react-router-dom";
 import { createCampaign } from "@/api/campaigns";
 import { listRunnableSources, setCampaignSources } from "@/api/connectors";
 import type { RunnableSource } from "@/types/connector";
+import { AppPageHeader } from "@/components/layout/AppPageHeader";
+import { AppPageShell, PAGE_CONTENT_CLASS } from "@/components/layout/AppPageShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -93,13 +95,14 @@ export default function CampaignWizard() {
   }
 
   return (
-    <div className="p-8 max-w-4xl mx-auto" data-testid="campaign-wizard">
-      <div className="border-b border-slate-200 pb-5 mb-6">
-        <span className="text-[10px] font-mono uppercase tracking-widest text-[var(--color-muted)] bg-slate-100 px-2 py-0.5 rounded-sm">Step {step + 1} of {STEPS.length}</span>
-        <h1 className="text-xl font-bold tracking-tight text-slate-900 mt-2">Create Discovery Pipeline</h1>
-        <p className="text-xs text-[var(--color-muted)] mt-1">Configure criteria, targeting data, sources and matching priorities.</p>
-      </div>
-
+    <AppPageShell testId="campaign-wizard">
+      <AppPageHeader
+        backTo="/campaigns"
+        backLabel="Campaigns"
+        title="Create campaign"
+        subtitle={`Step ${step + 1} of ${STEPS.length} — ${STEPS[step]}`}
+      />
+      <div className={PAGE_CONTENT_CLASS}>
       {/* Progress Timeline Tracker (Sharp & Minimalist) */}
       <div className="mb-8 overflow-x-auto pb-2">
         <div className="flex items-center min-w-[600px] gap-1 text-[10px] font-mono uppercase tracking-wider">
@@ -356,6 +359,7 @@ export default function CampaignWizard() {
           )}
         </div>
       </div>
-    </div>
+      </div>
+    </AppPageShell>
   );
 }

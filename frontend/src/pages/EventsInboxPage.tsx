@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
-import { Link, useParams } from "react-router-dom";
-import { listCampaignEvents } from "@/api/events";
+import { useCallback, useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import { listOrganizationEvents } from "@/api/events";
 import { ListPagination, paginateSlice } from "@/components/ListPagination";
 import { AppPageHeader } from "@/components/layout/AppPageHeader";
 import { AppPageShell, PAGE_CONTENT_CLASS } from "@/components/layout/AppPageShell";
@@ -16,33 +16,31 @@ function ConfidenceBadge({ summary }: { summary: string }) {
         ? "text-violet-800 bg-violet-50 border-violet-200"
         : "text-amber-800 bg-amber-50 border-amber-200";
   return (
-    <span className={`text-xs font-mono border px-2 py-0.5 rounded-full ${styles}`} data-testid="event-confidence">
-      {summary}
-    </span>
+    <span className={`text-xs font-mono border px-2 py-0.5 rounded-full ${styles}`}>{summary}</span>
   );
 }
 
-export default function CampaignEvents() {
-  const { id } = useParams<{ id: string }>();
+export default function EventsInboxPage() {
   const [items, setItems] = useState<CampaignEventListItem[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState("");
   const [page, setPage] = useState(1);
 
-  const load = useMemo(
-    () => () => {
-      if (!id) return Promise.resolve();
-      return listCampaignEvents(id, { q: q.trim() || undefined, include_score: false })
-        .then(setItems)
-        .catch((e) => setError(String(e)))
-        .finally(() => setLoading(false));
-    },
-    [id, q],
-  );
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      setItems(await listOrganizationEvents({ q: q.trim() || undefined, limit: 500 }));
+    } catch (e) {
+      setItems([]);
+      setError(String(e));
+    } finally {
+      setLoading(false);
+    }
+  }, [q]);
 
   useEffect(() => {
-    setLoading(true);
     void load();
   }, [load]);
 
@@ -52,59 +50,78 @@ export default function CampaignEvents() {
 
   const pageItems = paginateSlice(items, page);
 
-  if (loading) {
-    return (
-      <AppPageShell>
-        <div className="p-10 flex justify-center">
-          <Loader2 className="size-5 animate-spin text-slate-400" />
-        </div>
-      </AppPageShell>
-    );
-  }
-
   return (
-    <AppPageShell testId="campaign-events">
+    <AppPageShell testId="events-inbox">
       <AppPageHeader
-        backTo={`/campaigns/${id}`}
-        backLabel="Campaign"
-        title="Event results"
-        subtitle="Up to 10 events per page. Use filter then Next for more."
+        title="Events"
+        subtitle={
+          <>
+            Canonical events across campaigns. Per-campaign lists under{" "}
+            <Link to="/campaigns" className="underline font-medium text-slate-700">
+              Campaigns
+            </Link>
+            .
+          </>
+        }
       />
       <div className={PAGE_CONTENT_CLASS}>
-        <AppSection title="Events">
+        <AppSection
+          title="Inbox"
+          description="Up to 10 events per page. Open a row for scoring, audience, engagement, content, and browser session."
+        >
           <input
             type="search"
             placeholder="Filter by title…"
-            className="mb-4 w-full max-w-md border border-slate-200 rounded-md px-3 py-2 text-sm"
-            data-testid="event-list-filter"
+            className="mb-4 w-full max-w-md border border-slate-200 rounded-md px-3 py-2 text-sm bg-white"
+            data-testid="events-inbox-filter"
             value={q}
             onChange={(e) => setQ(e.target.value)}
           />
-          {error && <p className="text-sm text-red-600 mb-4">{error}</p>}
-          {items.length === 0 ? (
-            <p className="text-sm text-slate-500">No events yet. Run discovery on this campaign first.</p>
-          ) : (
+          {error && (
+            <p className="text-sm text-red-600 mb-4" data-testid="events-inbox-error">
+              {error}
+            </p>
+          )}
+          {loading && (
+            <div className="flex items-center gap-2 text-sm text-slate-500">
+              <Loader2 className="size-4 animate-spin" />
+              Loading events…
+            </div>
+          )}
+          {!loading && items.length === 0 && (
+            <p className="text-sm text-slate-500" data-testid="events-inbox-empty">
+              No events yet. Run discovery on a campaign to populate this inbox.
+            </p>
+          )}
+          {!loading && items.length > 0 && (
             <>
               <div className="overflow-x-auto rounded-md border border-slate-100">
                 <table className="w-full text-sm">
                   <thead className="bg-slate-50 text-left text-xs uppercase tracking-wider text-slate-500">
                     <tr>
                       <th className="p-3">Title</th>
+                      <th className="p-3">Campaign</th>
                       <th className="p-3">Region</th>
-                      <th className="p-3">Sources</th>
                       <th className="p-3">Confidence</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 bg-white">
                     {pageItems.map((ev) => (
-                      <tr key={ev.id} data-testid="event-list-row">
+                      <tr key={ev.id} data-testid="events-inbox-row" className="hover:bg-slate-50/80">
                         <td className="p-3">
                           <Link to={`/events/${ev.id}`} className="font-medium text-slate-900 hover:underline">
                             {ev.canonical_title}
                           </Link>
                         </td>
+                        <td className="p-3">
+                          <Link
+                            to={`/campaigns/${ev.campaign_id}/events`}
+                            className="text-slate-600 hover:underline text-xs"
+                          >
+                            {ev.campaign_name || ev.campaign_id.slice(0, 8)}
+                          </Link>
+                        </td>
                         <td className="p-3 text-slate-600">{ev.region || "—"}</td>
-                        <td className="p-3 text-slate-600 font-mono text-xs">{ev.source_count ?? "—"}</td>
                         <td className="p-3">
                           <ConfidenceBadge summary={ev.confidence_summary} />
                         </td>
@@ -117,7 +134,7 @@ export default function CampaignEvents() {
                 page={page}
                 totalItems={items.length}
                 onPageChange={setPage}
-                testId="campaign-events-pagination"
+                testId="events-inbox-pagination"
               />
             </>
           )}
