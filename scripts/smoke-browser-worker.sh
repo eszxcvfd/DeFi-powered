@@ -3,6 +3,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 export PYTHONPATH="${PYTHONPATH:-}:src"
+export LIVELEAD_BROWSER_AUTOMATION_MODE="${LIVELEAD_BROWSER_AUTOMATION_MODE:-stub}"
 if [ -x "$ROOT/.venv/bin/python" ]; then
   PY="$ROOT/.venv/bin/python"
 else

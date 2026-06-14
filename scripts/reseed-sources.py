@@ -60,7 +60,7 @@ def main():
                         "valid": True,
                     }
                 ),
-                "rate_limit_json": "{}",
+                "rate_limit_json": json.dumps({"feed_url": "https://techcrunch.com/feed/"}),
                 "secret_ciphertext": None,
             },
             {
@@ -183,6 +183,32 @@ def main():
                     {
                         "access_mode": "feed",
                         "quota_per_day": 500,
+                        "quota_used_today": 0,
+                        "window_start_hour": 0,
+                        "window_end_hour": 23,
+                        "retention_days": 90,
+                        "valid": True,
+                    }
+                ),
+                "rate_limit_json": "{}",
+                "secret_ciphertext": None,
+            },
+            {
+                "id": str(uuid4()),
+                "organization_id": DEV_ORGANIZATION_ID,
+                "name": "Partner portal (CloakBrowser)",
+                "domain": "partners.example.com",
+                "connector_type": "browser",
+                "automation_engine": "cloakbrowser",
+                "authentication_mode": "none",
+                "enabled": 1,
+                "approved": 1,
+                "approved_by": "admin",
+                "approved_at": datetime.now(UTC).isoformat(),
+                "policy_json": json.dumps(
+                    {
+                        "access_mode": "browser",
+                        "quota_per_day": 50,
                         "quota_used_today": 0,
                         "window_start_hour": 0,
                         "window_end_hour": 23,

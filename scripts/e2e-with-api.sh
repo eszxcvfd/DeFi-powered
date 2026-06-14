@@ -6,6 +6,11 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 export PYTHONPATH="${PYTHONPATH:-}:src"
 export LIVELEAD_SQLITE_PATH="${LIVELEAD_SQLITE_PATH:-$ROOT/data/livelead.sqlite3}"
+export LIVELEAD_BROWSER_AUTOMATION_MODE="${LIVELEAD_BROWSER_AUTOMATION_MODE:-playwright}"
+if [ -f "$ROOT/frontend/.playwright-browser.env" ]; then
+  # shellcheck source=/dev/null
+  source "$ROOT/frontend/.playwright-browser.env"
+fi
 
 PY="${ROOT}/.venv/bin/python"
 UV="${ROOT}/.venv/bin/uvicorn"
@@ -74,6 +79,8 @@ fi
 free_port "$PREVIEW_PORT"
 
 cd "$ROOT/frontend"
+echo "e2e-with-api: building frontend for preview..." >&2
+npm run build
 echo "e2e-with-api: starting Vite preview on 127.0.0.1:${PREVIEW_PORT}..." >&2
 npm run preview -- --host 127.0.0.1 --port "$PREVIEW_PORT" &
 PREVIEW_PID=$!

@@ -115,9 +115,15 @@ def main():
     existing_tables = {r[0] for r in cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")}
     
     try:
-        # 1. Clean E2E Campaigns and their dependencies
         if "campaigns" in existing_tables:
-            cursor.execute("SELECT id, name FROM campaigns WHERE name LIKE '%E2E%' OR name LIKE '%e2e%'")
+            cursor.execute(
+                """
+                SELECT id, name FROM campaigns 
+                WHERE name LIKE '%E2E%' 
+                   OR name LIKE '%e2e%' 
+                   OR name LIKE '%Discovery Camp%'
+                """
+            )
             e2e_campaigns = cursor.fetchall()
             
             if e2e_campaigns:
