@@ -8,13 +8,12 @@ from sqlalchemy import pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
+from livelead.infrastructure.db.models import Base
 from livelead.runtime.settings import parse_settings
 
 config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
-
-from livelead.infrastructure.db.models import Base
 
 target_metadata = Base.metadata
 

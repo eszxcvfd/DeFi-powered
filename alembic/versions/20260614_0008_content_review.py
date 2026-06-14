@@ -4,15 +4,15 @@ Revision ID: 20260614_0008
 Revises: 20260614_0007
 """
 
-from typing import Sequence, Union
+from collections.abc import Sequence
 
 import sqlalchemy as sa
 from alembic import op
 
 revision: str = "20260614_0008"
-down_revision: Union[str, Sequence[str], None] = "20260614_0007"
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+down_revision: str | Sequence[str] | None = "20260614_0007"
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
@@ -22,9 +22,15 @@ def upgrade() -> None:
     if "generated_content_drafts" in tables:
         cols = {c["name"] for c in insp.get_columns("generated_content_drafts")}
         if "body_revision" not in cols:
-            op.add_column("generated_content_drafts", sa.Column("body_revision", sa.Integer(), server_default="1"))
+            op.add_column(
+                "generated_content_drafts",
+                sa.Column("body_revision", sa.Integer(), server_default="1"),
+            )
         if "reviewer_assignee" not in cols:
-            op.add_column("generated_content_drafts", sa.Column("reviewer_assignee", sa.String(128), server_default=""))
+            op.add_column(
+                "generated_content_drafts",
+                sa.Column("reviewer_assignee", sa.String(128), server_default=""),
+            )
     if "content_review_decisions" not in tables:
         op.create_table(
             "content_review_decisions",
