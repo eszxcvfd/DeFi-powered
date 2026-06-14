@@ -9,6 +9,7 @@ export type EventScoreSummary = {
 export type CampaignEventListItem = {
   id: string;
   campaign_id: string;
+  campaign_name?: string;
   canonical_title: string;
   source_url: string;
   observed_at: string;

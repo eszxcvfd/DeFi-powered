@@ -45,3 +45,23 @@ export async function patchLead(id: string, body: Record<string, unknown>): Prom
   if (!r.ok) throw new Error("patch lead failed");
   return r.json();
 }
+
+export type RecordOutcomeBody = {
+  outcome_type: string;
+  notes?: string;
+  linked_content_draft_id?: string;
+  linked_event_id?: string;
+};
+
+export async function recordLeadOutcome(leadId: string, body: RecordOutcomeBody): Promise<LeadDetail> {
+  const r = await fetch(`/leads/${leadId}/outcomes`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!r.ok) {
+    const err = await r.json().catch(() => ({}));
+    throw new Error((err as { detail?: string }).detail ?? "record outcome failed");
+  }
+  return r.json();
+}

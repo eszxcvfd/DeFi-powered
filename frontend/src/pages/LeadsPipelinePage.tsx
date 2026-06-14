@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { getLead, listLeads, patchLead } from "@/api/leads";
+import { getLead, listLeads, patchLead, recordLeadOutcome } from "@/api/leads";
 import { completeReminder, listReminderQueue, type ReminderQueueItem } from "@/api/reminders";
 import { Button } from "@/components/ui/button";
-import { LEAD_STAGE_LABELS, type LeadDetail, type LeadSummary } from "@/types/lead";
-import { Loader2, Building, User, Clock } from "lucide-react";
+import { latestOutcomeBadgeText } from "@/lib/leadActivityDisplay";
+import { leadPrimaryLabel, leadSecondaryLine } from "@/lib/leadDisplay";
+import { LEAD_STAGE_LABELS, OUTCOME_TYPE_LABELS, type LeadDetail, type LeadSummary, type LeadActivity } from "@/types/lead";
+import { Loader2, Building, User, Clock, CheckCircle2, FileText, ArrowRight, Info } from "lucide-react";
 
 const STAGE_ORDER = [
   "newly_discovered",
@@ -56,6 +58,104 @@ function getAvatarColor(name: string) {
   return colors[index];
 }
 
+function renderActivityItem(a: LeadActivity) {
+  const when = a.occurred_at || a.created_at;
+  const formattedTime = (() => {
+    try {
+      return new Date(when).toLocaleString();
+    } catch {
+      return when;
+    }
+  })();
+
+  const isOutcome = a.kind === "outcome_recorded";
+  const isStage = a.kind === "stage_changed";
+  const isNote = a.kind === "note_added";
+
+  let IconComponent = Info;
+  let iconStyle = "bg-slate-50 text-slate-500 border-slate-200";
+  let badgeStyle = "bg-slate-100 text-slate-700 border-slate-200/60";
+  let badgeText = a.kind;
+
+  if (isOutcome) {
+    IconComponent = CheckCircle2;
+    iconStyle = "bg-emerald-50 text-emerald-600 border-emerald-200";
+    badgeStyle = "bg-emerald-50 text-emerald-800 border-emerald-200/80";
+    const typeLabel = a.outcome_type ? (OUTCOME_TYPE_LABELS[a.outcome_type] ?? a.outcome_type) : "";
+    badgeText = `outcome_recorded${typeLabel ? `: ${typeLabel}` : ""}`;
+  } else if (isStage) {
+    IconComponent = ArrowRight;
+    iconStyle = "bg-blue-50 text-blue-600 border-blue-250";
+    badgeStyle = "bg-blue-50 text-blue-700 border-blue-200/85";
+    badgeText = "stage_changed";
+  } else if (isNote) {
+    IconComponent = FileText;
+    iconStyle = "bg-amber-50 text-amber-600 border-amber-200";
+    badgeStyle = "bg-amber-50 text-amber-700 border-amber-200/80";
+    badgeText = "note_added";
+  }
+
+  return (
+    <>
+      {/* Centered Timeline Icon */}
+      <div className={`absolute -left-3 top-0.5 size-6 rounded-full flex items-center justify-center bg-white border shadow-xs shrink-0 ${iconStyle}`}>
+        <IconComponent className="size-3.5" />
+      </div>
+
+      {/* Item Content Header */}
+      <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-slate-500 mb-1">
+        <span className={`inline-flex px-1.5 py-0.5 rounded text-[10px] font-semibold border ${badgeStyle}`}>
+          {badgeText}
+        </span>
+        <span className="font-medium text-slate-700">{a.actor}</span>
+        <span className="text-slate-400">·</span>
+        <span>{formattedTime}</span>
+      </div>
+
+      {/* Item Body details */}
+      {isOutcome && (
+        <>
+          {(() => {
+            const isGeneric = a.body ? /^Recorded \w+ outcome$/i.test(a.body.trim()) : true;
+            if (!isGeneric && a.body) {
+              return (
+                <div className="mt-1 text-[12px] text-slate-750 bg-emerald-50/30 border border-emerald-100/60 rounded-xl p-3 font-normal shadow-2xs leading-relaxed max-w-2xl">
+                  {a.body}
+                </div>
+              );
+            }
+            return null;
+          })()}
+        </>
+      )}
+
+      {isStage && (
+        <div className="mt-1 flex items-center gap-1.5 text-[12px] text-slate-700 font-medium">
+          <span className="px-1.5 py-0.5 bg-slate-50 rounded-md text-slate-600 border border-slate-200/50">
+            {LEAD_STAGE_LABELS[a.from_stage] ?? a.from_stage}
+          </span>
+          <ArrowRight className="size-3.5 text-slate-400 shrink-0" />
+          <span className="px-1.5 py-0.5 bg-slate-50 rounded-md text-slate-800 border border-slate-200 font-semibold">
+            {LEAD_STAGE_LABELS[a.to_stage] ?? a.to_stage}
+          </span>
+        </div>
+      )}
+
+      {isNote && (
+        <div className="mt-1 text-[12px] text-slate-700 bg-amber-50/20 border border-amber-100/50 rounded-xl p-3 font-normal italic shadow-2xs leading-relaxed max-w-2xl">
+          {a.body || "—"}
+        </div>
+      )}
+
+      {!isOutcome && !isStage && !isNote && a.body && (
+        <div className="mt-1 text-[12px] text-slate-600 leading-relaxed">
+          {a.body}
+        </div>
+      )}
+    </>
+  );
+}
+
 export default function LeadsPipelinePage() {
   const [leads, setLeads] = useState<LeadSummary[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -67,6 +167,9 @@ export default function LeadsPipelinePage() {
   const [error, setError] = useState<string | null>(null);
   const [queue, setQueue] = useState<ReminderQueueItem[]>([]);
   const [followUp, setFollowUp] = useState("");
+  const [outcomeType, setOutcomeType] = useState("contact");
+  const [outcomeNote, setOutcomeNote] = useState("");
+  const [outcomeSavedFlash, setOutcomeSavedFlash] = useState<string | null>(null);
 
   const refresh = () =>
     Promise.all([listLeads(), listReminderQueue()])
@@ -92,6 +195,11 @@ export default function LeadsPipelinePage() {
       })
       .catch((e) => setError(String(e)));
   }, [selectedId]);
+
+  useEffect(() => {
+    if (!detail || !outcomeSavedFlash) return;
+    document.getElementById("lead-detail-panel")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [detail, outcomeSavedFlash]);
 
   const byStage = useMemo(() => {
     const map: Record<string, LeadSummary[]> = {};
@@ -124,6 +232,29 @@ export default function LeadsPipelinePage() {
       const updated = await patchLead(selectedId, { activity_note: note.trim() });
       setDetail(updated);
       setNote("");
+      await refresh();
+    } catch (e) {
+      setError(String(e));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function submitOutcome() {
+    if (!selectedId) return;
+    setSaving(true);
+    setError(null);
+    try {
+      const updated = await recordLeadOutcome(selectedId, {
+        outcome_type: outcomeType,
+        notes: outcomeNote.trim() || undefined,
+      });
+      setDetail(updated);
+      setOutcomeNote("");
+      const label =
+        OUTCOME_TYPE_LABELS[outcomeType] ?? outcomeType;
+      setOutcomeSavedFlash(`Saved: ${label} outcome`);
+      window.setTimeout(() => setOutcomeSavedFlash(null), 5000);
       await refresh();
     } catch (e) {
       setError(String(e));
@@ -165,7 +296,19 @@ export default function LeadsPipelinePage() {
           </Button>
         </div>
       </div>
-      {error && <p className="text-sm text-red-600 mb-4">{error}</p>}
+      {error && (
+        <p className="text-sm text-red-600 mb-4" data-testid="leads-error">
+          {error}
+        </p>
+      )}
+      {outcomeSavedFlash && (
+        <p
+          className="text-sm text-emerald-800 bg-emerald-50 border border-emerald-200 px-3 py-2 rounded-sm mb-4"
+          data-testid="lead-outcome-saved-flash"
+        >
+          {outcomeSavedFlash}. See <strong>Latest outcome</strong> and <strong>Outcomes</strong> below the list.
+        </p>
+      )}
 
       <section className="mb-6 border border-slate-200 p-4 rounded-sm bg-white" data-testid="reminder-queue">
         <h2 className="text-xs font-bold uppercase tracking-wider text-slate-600 mb-2">Due follow-ups</h2>
@@ -209,8 +352,8 @@ export default function LeadsPipelinePage() {
         <table className="w-full text-sm border border-slate-200" data-testid="leads-table">
           <thead className="bg-slate-50 text-left text-xs uppercase text-slate-500">
             <tr>
-              <th className="p-3">Name</th>
-              <th className="p-3">Company</th>
+              <th className="p-3">Event / lead</th>
+              <th className="p-3">Organizer · region</th>
               <th className="p-3">Stage</th>
               <th className="p-3">Owner</th>
             </tr>
@@ -223,9 +366,24 @@ export default function LeadsPipelinePage() {
                 data-testid="lead-row"
                 onClick={() => setSelectedId(l.id)}
               >
-                <td className="p-3 font-medium">{l.display_name}</td>
-                <td className="p-3">{l.company || "—"}</td>
-                <td className="p-3">{LEAD_STAGE_LABELS[l.stage] ?? l.stage}</td>
+                <td className="p-3">
+                  <p className="font-medium text-slate-900">{leadPrimaryLabel(l)}</p>
+                  {l.event_title && l.display_name !== leadPrimaryLabel(l) ? (
+                    <p className="text-xs text-slate-500 mt-0.5 truncate max-w-md">{l.display_name}</p>
+                  ) : null}
+                </td>
+                <td className="p-3 text-slate-600">{leadSecondaryLine(l) || "—"}</td>
+                <td className="p-3">
+                  {LEAD_STAGE_LABELS[l.stage] ?? l.stage}
+                  {l.latest_outcome ? (
+                    <span
+                      className="ml-2 text-[10px] font-medium text-emerald-800 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded-sm"
+                      data-testid="lead-row-latest-outcome"
+                    >
+                      {latestOutcomeBadgeText(l.latest_outcome.outcome_type)}
+                    </span>
+                  ) : null}
+                </td>
                 <td className="p-3">
                   {l.owner || "—"}
                   {l.reminder?.state === "due" || l.reminder?.state === "overdue" ? (
@@ -283,12 +441,12 @@ export default function LeadsPipelinePage() {
                           >
                             {/* Monogram Avatar & Lead Name & Job Title */}
                             <div className="flex items-start gap-2.5 mb-2.5">
-                              <div className={`size-7 rounded-full shrink-0 flex items-center justify-center text-[10px] font-bold ${getAvatarColor(l.display_name)}`}>
-                                {getInitials(l.display_name)}
+                              <div className={`size-7 rounded-full shrink-0 flex items-center justify-center text-[10px] font-bold ${getAvatarColor(leadPrimaryLabel(l))}`}>
+                                {getInitials(leadPrimaryLabel(l))}
                               </div>
                               <div className="min-w-0 flex-1">
                                 <div className="font-semibold text-slate-900 text-[14px] leading-tight group-hover:text-black truncate">
-                                  {l.display_name}
+                                  {leadPrimaryLabel(l)}
                                 </div>
                                 {l.title && (
                                   <span className="inline-block mt-0.5 text-[10px] font-medium text-slate-500 truncate max-w-full">
@@ -311,6 +469,14 @@ export default function LeadsPipelinePage() {
                                   <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-indigo-50/50 text-indigo-700 border border-indigo-100/50 text-[10px] font-medium max-w-full">
                                     <span className="w-1 h-1 rounded-full bg-indigo-500 shrink-0" />
                                     <span className="truncate">{l.discovery_source}</span>
+                                  </span>
+                                )}
+                                {l.latest_outcome && (
+                                  <span
+                                    className="inline-flex px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200/80 text-[10px] font-semibold"
+                                    data-testid="lead-kanban-outcome-badge"
+                                  >
+                                    {latestOutcomeBadgeText(l.latest_outcome.outcome_type)}
                                   </span>
                                 )}
                               </div>
@@ -367,10 +533,24 @@ export default function LeadsPipelinePage() {
       )}
 
       {detail && (
-        <section className="mt-8 border border-slate-200 p-5 rounded-sm bg-white" data-testid="lead-detail-panel">
-          <h2 className="text-sm font-bold uppercase tracking-wider text-slate-700 mb-2">{detail.display_name}</h2>
+        <section
+          className="mt-8 border border-slate-200 p-5 rounded-sm bg-white scroll-mt-6"
+          data-testid="lead-detail-panel"
+          id="lead-detail-panel"
+        >
+          <h2 className="text-sm font-bold uppercase tracking-wider text-slate-700 mb-2">{leadPrimaryLabel(detail)}</h2>
+          <p className="text-xs text-slate-500 mb-2">{leadSecondaryLine(detail)}</p>
           <p className="text-sm text-slate-600 mb-4">
             {LEAD_STAGE_LABELS[detail.stage] ?? detail.stage}
+            {detail.latest_outcome && (
+              <span
+                className="ml-2 text-xs font-mono text-emerald-800 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-sm"
+                data-testid="lead-latest-outcome"
+              >
+                Latest outcome: {OUTCOME_TYPE_LABELS[detail.latest_outcome.outcome_type] ?? detail.latest_outcome.outcome_type}
+                {detail.latest_outcome.notes ? ` — ${detail.latest_outcome.notes}` : ""}
+              </span>
+            )}
             {detail.event_id && (
               <>
                 {" · "}
@@ -425,6 +605,31 @@ export default function LeadsPipelinePage() {
               </Button>
             ))}
           </div>
+          <div className="flex flex-wrap items-center gap-2 mb-4 p-3 border border-slate-200 rounded-sm bg-slate-50/50" data-testid="lead-record-outcome">
+            <span className="text-xs uppercase text-slate-500 w-full sm:w-auto">Record outcome</span>
+            <select
+              className="border border-slate-200 rounded-sm px-2 py-1 text-sm bg-white"
+              data-testid="lead-outcome-type"
+              value={outcomeType}
+              onChange={(e) => setOutcomeType(e.target.value)}
+            >
+              {Object.entries(OUTCOME_TYPE_LABELS).map(([k, label]) => (
+                <option key={k} value={k}>
+                  {label}
+                </option>
+              ))}
+            </select>
+            <input
+              className="flex-1 min-w-[120px] border border-slate-200 rounded-sm px-3 py-1.5 text-sm"
+              placeholder="Outcome notes (optional)"
+              data-testid="lead-outcome-notes"
+              value={outcomeNote}
+              onChange={(e) => setOutcomeNote(e.target.value)}
+            />
+            <Button type="button" size="sm" disabled={saving} data-testid="lead-record-outcome-submit" onClick={submitOutcome}>
+              Save outcome
+            </Button>
+          </div>
           <div className="flex gap-2 mb-4">
             <input
               className="flex-1 border border-slate-200 rounded-sm px-3 py-2 text-sm"
@@ -437,14 +642,27 @@ export default function LeadsPipelinePage() {
               Add note
             </Button>
           </div>
-          <h3 className="text-xs font-bold uppercase text-slate-500 mb-2">Activity</h3>
-          <ul className="text-xs text-slate-600 space-y-1" data-testid="lead-activity-list">
-            {detail.recent_activity.map((a) => (
-              <li key={a.id}>
-                <span className="font-mono">{a.kind}</span> — {a.body || a.to_stage} ({a.actor})
-              </li>
-            ))}
-          </ul>
+          <h3 className="text-xs font-bold uppercase text-slate-500 mb-4">Timeline</h3>
+          <div className="pl-3 pr-1">
+            <ul className="relative border-l border-slate-200/80 space-y-6" data-testid="lead-activity-list">
+              {detail.recent_activity.length === 0 ? (
+                <li className="text-slate-400 pl-4 text-xs">No activity yet.</li>
+              ) : (
+                detail.recent_activity.map((a) => {
+                  const isOutcome = a.kind === "outcome_recorded";
+                  return (
+                    <li
+                      key={a.id}
+                      className="relative pl-7 text-xs"
+                      data-testid={isOutcome ? "lead-activity-outcome" : undefined}
+                    >
+                      {renderActivityItem(a)}
+                    </li>
+                  );
+                })
+              )}
+            </ul>
+          </div>
         </section>
       )}
     </div>

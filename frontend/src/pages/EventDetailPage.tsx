@@ -1,6 +1,15 @@
 import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
-import { createEngagementPlan, getEvent, patchEngagementTask, refreshAudience, rescoreEvent } from "@/api/events";
+import { Link, useNavigate, useParams } from "react-router-dom";
+import { createBrowserSessionForEvent } from "@/api/browserSessions";
+import {
+  createEngagementPlan,
+  getEvent,
+  listEventBrowserLaunchSources,
+  patchEngagementTask,
+  refreshAudience,
+  rescoreEvent,
+  type BrowserLaunchSourceOption,
+} from "@/api/events";
 import { createLead } from "@/api/leads";
 import { Button } from "@/components/ui/button";
 import { PRIORITY_LABELS } from "@/constants/priority";
@@ -9,6 +18,7 @@ import type { EventDetail } from "@/types/event";
 import { Loader2, RefreshCw } from "lucide-react";
 
 export default function EventDetailPage() {
+  const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const [event, setEvent] = useState<EventDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -18,12 +28,23 @@ export default function EventDetailPage() {
   const [taskUpdating, setTaskUpdating] = useState<string | null>(null);
   const [leadCreating, setLeadCreating] = useState(false);
   const [leadMessage, setLeadMessage] = useState<string | null>(null);
+  const [browserLaunching, setBrowserLaunching] = useState(false);
+  const [browserLaunchError, setBrowserLaunchError] = useState<string | null>(null);
+  const [browserSources, setBrowserSources] = useState<BrowserLaunchSourceOption[]>([]);
+  const [selectedBrowserSourceId, setSelectedBrowserSourceId] = useState("");
 
   useEffect(() => {
     if (!id) return;
     getEvent(id)
       .then(setEvent)
       .catch((e) => setError(String(e)));
+    listEventBrowserLaunchSources(id)
+      .then((opts) => {
+        setBrowserSources(opts);
+        const first = opts.find((o) => o.runnable) ?? opts[0];
+        if (first) setSelectedBrowserSourceId(first.source_id);
+      })
+      .catch(() => setBrowserSources([]));
   }, [id]);
 
   if (error && !event) return <p className="p-8 text-red-600">{error}</p>;
@@ -91,6 +112,64 @@ export default function EventDetailPage() {
             </li>
           ))}
         </ul>
+        <div className="mt-4 pt-4 border-t border-slate-100" data-testid="event-browser-launch-panel">
+          <p className="text-xs text-slate-500 mb-2">
+            Playwright connector is created automatically from source evidence URLs (no Admin step).
+          </p>
+          {browserSources.length > 0 ? (
+            <div className="flex flex-wrap items-center gap-2">
+              <select
+                className="text-xs border border-slate-200 rounded-sm px-2 py-1.5 max-w-xs"
+                data-testid="event-browser-source-select"
+                value={selectedBrowserSourceId}
+                onChange={(e) => setSelectedBrowserSourceId(e.target.value)}
+              >
+                {browserSources.map((o) => (
+                  <option key={o.source_id} value={o.source_id} disabled={!o.runnable}>
+                    {o.name} ({o.engine})
+                    {!o.runnable ? " — blocked" : ""}
+                  </option>
+                ))}
+              </select>
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                data-testid="event-open-browser-session"
+                disabled={
+                  browserLaunching ||
+                  !selectedBrowserSourceId ||
+                  !browserSources.find((o) => o.source_id === selectedBrowserSourceId)?.runnable
+                }
+                onClick={async () => {
+                  if (!id || !selectedBrowserSourceId) return;
+                  setBrowserLaunching(true);
+                  setBrowserLaunchError(null);
+                  try {
+                    const sess = await createBrowserSessionForEvent(id, selectedBrowserSourceId);
+                    navigate(`/browser?session=${sess.id}`);
+                  } catch (e) {
+                    setBrowserLaunchError(String(e));
+                  } finally {
+                    setBrowserLaunching(false);
+                  }
+                }}
+              >
+                {browserLaunching ? <Loader2 className="size-3.5 animate-spin mr-2" /> : null}
+                Open browser session
+              </Button>
+            </div>
+          ) : (
+            <p className="text-xs text-slate-500" data-testid="event-browser-launch-wait">
+              Preparing Playwright connector from evidence… reload the page if this persists.
+            </p>
+          )}
+          {browserLaunchError && (
+            <p className="text-xs text-red-600 mt-2" data-testid="event-browser-launch-error">
+              {browserLaunchError}
+            </p>
+          )}
+        </div>
       </section>
 
       <section className="mt-6 border border-slate-200 p-5 rounded-sm bg-white" data-testid="event-audience-panel">
@@ -316,12 +395,10 @@ export default function EventDetailPage() {
                 setLeadCreating(true);
                 setLeadMessage(null);
                 try {
-                  const organizer = (event.organizer || "").trim();
-                  const title = event.canonical_title.slice(0, 80);
                   await createLead({
-                    display_name: organizer || title,
-                    company: organizer && organizer !== title ? organizer : "",
-                    title: "",
+                    display_name: event.canonical_title.slice(0, 120),
+                    company: (event.organizer || "").trim(),
+                    title: event.region ? `Event · ${event.region}` : "Event prospect",
                     discovery_source: "event",
                     event_id: event.id,
                     campaign_id: event.campaign_id,

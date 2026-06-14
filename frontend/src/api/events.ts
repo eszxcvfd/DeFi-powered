@@ -5,6 +5,7 @@ export type ListEventsParams = {
   discovery_job_id?: string;
   source_id?: string;
   include_score?: boolean;
+  limit?: number;
 };
 
 function queryString(params: ListEventsParams): string {
@@ -13,8 +14,20 @@ function queryString(params: ListEventsParams): string {
   if (params.discovery_job_id) sp.set("discovery_job_id", params.discovery_job_id);
   if (params.source_id) sp.set("source_id", params.source_id);
   if (params.include_score === false) sp.set("include_score", "false");
+  if (params.limit != null) sp.set("limit", String(params.limit));
   const s = sp.toString();
   return s ? `?${s}` : "";
+}
+
+export async function listOrganizationEvents(
+  params: Pick<ListEventsParams, "q" | "limit" | "include_score"> = {},
+): Promise<CampaignEventListItem[]> {
+  const r = await fetch(`/events${queryString(params)}`);
+  if (!r.ok) {
+    const body = await r.json().catch(() => ({}));
+    throw new Error((body as { detail?: string }).detail ?? "list events failed");
+  }
+  return r.json();
 }
 
 export async function listCampaignEvents(
@@ -23,6 +36,24 @@ export async function listCampaignEvents(
 ): Promise<CampaignEventListItem[]> {
   const r = await fetch(`/campaigns/${campaignId}/events${queryString(params)}`);
   if (!r.ok) throw new Error("list campaign events failed");
+  return r.json();
+}
+
+export type BrowserLaunchSourceOption = {
+  source_id: string;
+  name: string;
+  domain: string;
+  automation_engine: string;
+  engine: string;
+  runnable: boolean;
+  denied_reasons: string[];
+};
+
+export async function listEventBrowserLaunchSources(
+  eventId: string,
+): Promise<BrowserLaunchSourceOption[]> {
+  const r = await fetch(`/events/${eventId}/browser-launch-sources`);
+  if (!r.ok) throw new Error("browser launch sources failed");
   return r.json();
 }
 

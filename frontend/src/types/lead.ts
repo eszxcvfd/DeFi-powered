@@ -18,6 +18,18 @@ export type LeadSummary = {
   follow_up_date: string | null;
   updated_at: string;
   reminder: LeadReminderSummary;
+  event_title?: string;
+  region?: string;
+  latest_outcome?: LatestLeadOutcome | null;
+};
+
+export type LatestLeadOutcome = {
+  outcome_type: string;
+  occurred_at: string;
+  actor: string;
+  activity_id: string;
+  linked_content_draft_id: string | null;
+  notes: string;
 };
 
 export type LeadActivity = {
@@ -28,6 +40,9 @@ export type LeadActivity = {
   from_stage: string;
   to_stage: string;
   created_at: string;
+  outcome_type?: string;
+  occurred_at?: string | null;
+  linked_content_draft_id?: string | null;
 };
 
 export type LeadDetail = LeadSummary & {
@@ -53,4 +68,11 @@ export const LEAD_STAGE_LABELS: Record<string, string> = {
   in_discussion: "In discussion",
   opportunity: "Opportunity",
   not_fit: "Not fit",
+};
+
+export const OUTCOME_TYPE_LABELS: Record<string, string> = {
+  contact: "Contact",
+  response: "Response",
+  meeting: "Meeting",
+  opportunity: "Opportunity",
 };
