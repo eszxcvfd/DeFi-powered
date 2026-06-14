@@ -71,3 +71,19 @@ the work is selected or when a product decision needs a durable place to land.
   slice with session launch, isolation, live status, and safe stop before
   allowlisted actions, confirmation flows, profile lifecycle, or debug-artifact
   stories.
+- `US-021-read-only-browser-actions-baseline`: add the first allowlisted
+  read-only browser-action slice with selector guardrails and timeout budgets
+  before destructive confirmation, screenshot/trace, or profile-management
+  stories.
+- `US-022-confirmation-gated-browser-actions-baseline`: add the first preview,
+  dry-run, and explicit confirmation slice for destructive or external-side-
+  effect browser actions before screenshot/trace, profile-management, or
+  CloakBrowser policy stories.
+- `US-023-browser-debug-artifacts-baseline`: add the first governed debug-
+  artifact slice for supervised browser sessions with manual screenshot,
+  console-log/trace capture, and retention/access guardrails before profile-
+  management or CloakBrowser policy stories.
+- `US-024-browser-profile-lifecycle-baseline`: add the first governed browser-
+  profile lifecycle slice with consented storage-state handling, lock/expire/
+  delete controls, and blocked-session reuse rules before CloakBrowser policy
+  stories.

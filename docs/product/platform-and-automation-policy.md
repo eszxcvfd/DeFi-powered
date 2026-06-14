@@ -52,6 +52,17 @@ isolation is needed:
 - Headed interactive sessions are allowed when the user must log in or supervise.
 - Sending content, posting, destructive actions, or external communication must
   require preview and confirmation.
+  The first confirmation-gated slice is defined in
+  `docs/product/browser-confirmation-and-preview.md`.
+- Read-only browser actions may run only from an explicit connector allowlist
+  with stable-locator and timeout guardrails. The first action slice is defined
+  in `docs/product/browser-read-only-actions-and-guardrails.md`.
+- Browser debug artifacts such as screenshots, console logs, and traces must
+  stay opt-in, retention-controlled, and secret-safe. The first artifact slice
+  is defined in `docs/product/browser-debug-artifacts-and-retention.md`.
+- Reusable browser profiles and saved browser-state material must remain
+  consent-aware, tenant-scoped, and secret-safe. The first profile lifecycle
+  slice is defined in `docs/product/browser-profile-lifecycle-and-consent.md`.
 - Credentials and secrets must not be stored as plaintext or written to logs.
 - The SQLite database file must stay inside the project directory and outside
   version control.

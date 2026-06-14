@@ -23,6 +23,8 @@ This product slice covers:
 - Secret-handling expectations for API keys, cookies, and credentials.
 - Admin-facing visibility into connector readiness and policy state through an
   initial `/admin/connectors` management surface.
+- Connector policy metadata that later browser-session stories can use to decide
+  which read-only actions are allowlisted.
 
 This product slice does not yet cover:
 
@@ -30,6 +32,11 @@ This product slice does not yet cover:
 - Full browser recipe authoring UX.
 - Interactive login sessions. The first supervised browser-session slice is
   defined in `docs/product/browser-session-console-and-isolation.md`.
+- Governed browser-profile lifecycle and consented saved-state reuse. That
+  first profile slice is defined in
+  `docs/product/browser-profile-lifecycle-and-consent.md`.
+- Read-only browser action execution. That first allowlisted action slice is
+  defined in `docs/product/browser-read-only-actions-and-guardrails.md`.
 - CAPTCHA handling workflows beyond deny or safe-stop requirements.
 - Connector health analytics dashboards.
 
