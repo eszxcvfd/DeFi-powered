@@ -70,6 +70,18 @@ confirmation.
   re-score behavior, and priority surfacing in event review.
 - **US-007 (Audience hypotheses):** Explainable audience hypotheses, evidence links,
   confidence signaling, and sensitive-inference guardrails in event detail.
+- **US-008 (Engagement plans):** Phase-based engagement plans, task tracking, and
+  anti-spam planning guardrails before content generation.
+- **US-009 (Generated content):** Draft variants, provider metadata, inline editing,
+  and safety flags in the first content-studio slice.
+- **US-010 (Content approval):** Reviewer approval and rejection workflow with
+  explicit review states and decision history.
+- **US-011 (Content handoff):** Approved-only copy/export flow, explicit
+  used-state transition, and handoff audit metadata before send workflows.
+- **US-012 (Lead pipeline):** Event-linked and manual lead creation, default
+  pipeline stages, duplicate guardrails, activity history, and table/Kanban UI.
+- **US-013 (Follow-up reminders):** Lead-linked reminders from follow-up dates,
+  due/overdue queue, complete/reschedule, in-app banner, and pipeline cues.
 
 ## Non-Goals For MVP
 

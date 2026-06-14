@@ -26,7 +26,13 @@ implemented until tests or validation evidence exist.
 | US-005 | Canonical event review list/detail, provenance, confidence, deduplication | yes | yes | yes | yes | implemented | `./scripts/verify-us-005.sh` |
 | US-006 | Campaign-aware event scoring, priority breakdown, explicit re-score | yes | yes | yes | yes | implemented | `./scripts/verify-us-006.sh` |
 | US-007 | Audience hypotheses, evidence links, confidence, sensitive-inference guardrails | yes | yes | yes | yes | implemented | `./scripts/verify-us-007.sh` |
-| US-008 | Engagement plans, phased tasks, task-state updates, anti-spam planning guardrails | no | no | no | no | planned | |
+| US-008 | Engagement plans, phased tasks, task-state updates, anti-spam planning guardrails | yes | yes | yes | yes | implemented | `./scripts/verify-us-008.sh`; engagement API + `frontend/e2e/engagement-plan.spec.ts` |
+| US-009 | Generated drafts, provider metadata, inline editing, and safety flags | yes | yes | yes | yes | implemented | `./scripts/verify-us-009.sh`; `POST /content/generate` + `frontend/e2e/content-generation.spec.ts` |
+| US-010 | Content approval states, reviewer decisions, and review history | yes | yes | yes | yes | implemented | `./scripts/verify-us-010.sh`; approve/reject API + `frontend/e2e/content-approval.spec.ts` |
+| US-011 | Approved-content copy/export, used-state updates, and handoff audit trail | yes | yes | yes | yes | implemented | `./scripts/verify-us-011.sh`; handoff API + `frontend/e2e/content-handoff.spec.ts` |
+| US-012 | Lead creation, default pipeline states, duplicate guardrails, and baseline activity history | yes | yes | yes | yes | implemented | `./scripts/verify-us-012.sh`; lead API + `frontend/e2e/lead-pipeline.spec.ts` |
+| US-013 | Lead-linked follow-up reminders, due/overdue queue, and baseline in-app reminder visibility | yes | yes | yes | yes | implemented | `./scripts/verify-us-013.sh`; reminders API + `frontend/e2e/follow-up-reminders.spec.ts` |
+| US-014 | Dashboard overview cards, widget freshness, and explicit empty or unavailable metric states | yes | yes | yes | yes | planned |  |
 
 ## Evidence Rules
 

@@ -13,7 +13,7 @@ the work is selected or when a product decision needs a durable place to land.
 | E00 Foundation | Repository scaffold, selected stack, local dev services, auth/RBAC boundary, tenant model, audit foundation, and validation commands. | active |
 | E01 Discovery MVP | Campaign/ICP, source registry and policy, API/RSS connector, browser adapter contract, discovery job progress, event normalization, deduplication, event list/detail. | active |
 | E02 Intelligence | Event scoring, audience hypothesis, evidence linking, AI provider abstraction, engagement plan, generated content, review workflow, anti-spam guardrails. | active |
-| E03 Lead And Reporting | Lead pipeline, duplicate detection, activities, follow-up reminders, dashboard, funnel, source performance, export. | unsliced |
+| E03 Lead And Reporting | Lead pipeline, duplicate detection, activities, follow-up reminders, dashboard, funnel, source performance, export. | active |
 | E04 Browser-Assisted Operations | Headed browser session console, profile lifecycle, confirmation workflow, screenshots/traces, optional CloakBrowser adapter review. | unsliced |
 | E05 Hardening | Performance, security, observability, backup/restore, UAT, and production readiness. | unsliced |
 
@@ -35,3 +35,19 @@ the work is selected or when a product decision needs a durable place to land.
   hypotheses with evidence links and sensitive-inference guardrails.
 - `US-008-engagement-plan-baseline`: create phase-based engagement plans and
   task tracking before content generation or approval workflow.
+- `US-009-content-generation-baseline`: generate editable draft variants with
+  safety flags before approval workflow or export behavior.
+- `US-010-content-approval-baseline`: add reviewer approval and rejection
+  workflow before export, used-lifecycle, or sending behavior.
+- `US-011-content-handoff-baseline`: allow approved-only copy/export and
+  used-state handoff before browser-send or archive workflow.
+- `US-012-lead-pipeline-baseline`: create the first lead pipeline slice with
+  event or manual lead creation, default stages, duplicate guardrails, and
+  baseline activity history before reminders or reporting.
+- `US-013-follow-up-reminders-baseline`: turn lead follow-up dates into due or
+  overdue reminder work, in-app reminder visibility, and complete or reschedule
+  actions before dashboard or email-notification stories.
+- `US-014-dashboard-overview-baseline`: add the first date-range dashboard
+  overview with trustworthy summary cards, freshness metadata, and explicit
+  empty or unavailable states before funnel, source-performance, or export
+  reporting.

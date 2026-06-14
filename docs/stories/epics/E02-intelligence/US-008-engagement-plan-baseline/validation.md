@@ -37,4 +37,5 @@ Add commands after scripts exist.
 
 ## Acceptance Evidence
 
-Add results after verification.
+- `./scripts/verify-us-008.sh` — ruff (via US-007 chain), pytest unit `test_engagement_generator`, integration `test_engagement_api`.
+- Playwright: `frontend/e2e/engagement-plan.spec.ts` (create plan, update task status).
