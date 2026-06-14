@@ -1,0 +1,1 @@
+"""Adapters: db, queue, storage, browser, AI."""

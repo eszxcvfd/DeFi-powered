@@ -1,0 +1,1 @@
+"""Scheduled discovery/sync — Foundation smoke entry only."""

@@ -1,0 +1,1 @@
+"""Isolated browser automation runtime — Foundation smoke entry only."""
