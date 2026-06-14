@@ -1,0 +1,45 @@
+import type { CampaignEventListItem, EventDetail } from "@/types/event";
+
+export type ListEventsParams = {
+  q?: string;
+  discovery_job_id?: string;
+  source_id?: string;
+  include_score?: boolean;
+};
+
+function queryString(params: ListEventsParams): string {
+  const sp = new URLSearchParams();
+  if (params.q) sp.set("q", params.q);
+  if (params.discovery_job_id) sp.set("discovery_job_id", params.discovery_job_id);
+  if (params.source_id) sp.set("source_id", params.source_id);
+  if (params.include_score === false) sp.set("include_score", "false");
+  const s = sp.toString();
+  return s ? `?${s}` : "";
+}
+
+export async function listCampaignEvents(
+  campaignId: string,
+  params: ListEventsParams = {},
+): Promise<CampaignEventListItem[]> {
+  const r = await fetch(`/campaigns/${campaignId}/events${queryString(params)}`);
+  if (!r.ok) throw new Error("list campaign events failed");
+  return r.json();
+}
+
+export async function getEvent(eventId: string): Promise<EventDetail> {
+  const r = await fetch(`/events/${eventId}`);
+  if (!r.ok) throw new Error("get event failed");
+  return r.json();
+}
+
+export async function refreshAudience(eventId: string): Promise<EventDetail> {
+  const r = await fetch(`/events/${eventId}/audience/refresh`, { method: "POST" });
+  if (!r.ok) throw new Error("audience refresh failed");
+  return r.json();
+}
+
+export async function rescoreEvent(eventId: string): Promise<EventDetail> {
+  const r = await fetch(`/events/${eventId}/rescore`, { method: "POST" });
+  if (!r.ok) throw new Error("rescore failed");
+  return r.json();
+}
