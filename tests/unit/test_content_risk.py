@@ -2,7 +2,9 @@ from livelead.domain.content.risk import evaluate_draft_risks
 
 
 def test_promotional_flag():
-    flags = evaluate_draft_risks("Act now guaranteed results", event_title="Payments Webinar EU", cta="Buy")
+    flags = evaluate_draft_risks(
+        "Act now guaranteed results", event_title="Payments Webinar EU", cta="Buy"
+    )
     codes = {f.code.value for f in flags}
     assert "overly_promotional" in codes
 

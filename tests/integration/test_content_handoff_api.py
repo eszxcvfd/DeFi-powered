@@ -34,7 +34,9 @@ PAYLOAD = {
 
 
 async def _approved_draft(client):
-    create = await client.post("/campaigns", json={**PAYLOAD, "name": f"H{uuid4()}", "description": ""})
+    create = await client.post(
+        "/campaigns", json={**PAYLOAD, "name": f"H{uuid4()}", "description": ""}
+    )
     cid = create.json()["id"]
     settings = client.app.state.settings
     url = settings.database_url.replace("sqlite+aiosqlite", "sqlite")
@@ -59,10 +61,15 @@ async def _approved_draft(client):
     await client.post(f"/events/{eid}/rescore")
     gen = await client.post(
         "/content/generate",
-        json={"event_id": str(eid), "settings": {"content_type": "outreach", "platform": "email", "variant_count": 1}},
+        json={
+            "event_id": str(eid),
+            "settings": {"content_type": "outreach", "platform": "email", "variant_count": 1},
+        },
     )
     draft_id = gen.json()["drafts"][0]["id"]
-    await client.post(f"/events/{eid}/content/drafts/{draft_id}/submit-for-review", json={"assignee": ""})
+    await client.post(
+        f"/events/{eid}/content/drafts/{draft_id}/submit-for-review", json={"assignee": ""}
+    )
     await client.post(
         f"/content/{draft_id}/approve",
         json={"event_id": str(eid), "note": "ok", "actor": "reviewer"},
@@ -75,10 +82,14 @@ async def _approved_draft(client):
 async def test_export_and_mark_used(client):
     eid, draft_id = await _approved_draft(client)
 
-    bad = await client.get(f"/content/{draft_id}/export", params={"event_id": str(eid), "format": "pdf"})
+    bad = await client.get(
+        f"/content/{draft_id}/export", params={"event_id": str(eid), "format": "pdf"}
+    )
     assert bad.status_code == 400
 
-    exp = await client.get(f"/content/{draft_id}/export", params={"event_id": str(eid), "format": "markdown"})
+    exp = await client.get(
+        f"/content/{draft_id}/export", params={"event_id": str(eid), "format": "markdown"}
+    )
     assert exp.status_code == 200
     assert "text/markdown" in exp.headers.get("content-type", "")
     assert "internal only" not in exp.text
@@ -102,7 +113,9 @@ async def test_export_and_mark_used(client):
 
 @pytest.mark.asyncio
 async def test_unapproved_export_blocked(client):
-    create = await client.post("/campaigns", json={**PAYLOAD, "name": f"U{uuid4()}", "description": ""})
+    create = await client.post(
+        "/campaigns", json={**PAYLOAD, "name": f"U{uuid4()}", "description": ""}
+    )
     cid = create.json()["id"]
     settings = client.app.state.settings
     url = settings.database_url.replace("sqlite+aiosqlite", "sqlite")
@@ -126,7 +139,10 @@ async def test_unapproved_export_blocked(client):
     await client.post(f"/events/{eid}/rescore")
     gen = await client.post(
         "/content/generate",
-        json={"event_id": str(eid), "settings": {"content_type": "outreach", "platform": "email", "variant_count": 1}},
+        json={
+            "event_id": str(eid),
+            "settings": {"content_type": "outreach", "platform": "email", "variant_count": 1},
+        },
     )
     draft_id = gen.json()["drafts"][0]["id"]
     blocked = await client.get(f"/content/{draft_id}/export", params={"event_id": str(eid)})

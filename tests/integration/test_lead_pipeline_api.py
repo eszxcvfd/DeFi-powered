@@ -34,7 +34,9 @@ PAYLOAD = {
 
 
 async def _event_id(client) -> UUID:
-    create = await client.post("/campaigns", json={**PAYLOAD, "name": f"L{uuid4()}", "description": ""})
+    create = await client.post(
+        "/campaigns", json={**PAYLOAD, "name": f"L{uuid4()}", "description": ""}
+    )
     cid = create.json()["id"]
     settings = client.app.state.settings
     url = settings.database_url.replace("sqlite+aiosqlite", "sqlite")

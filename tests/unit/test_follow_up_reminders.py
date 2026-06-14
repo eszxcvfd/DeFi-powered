@@ -9,7 +9,9 @@ from livelead.domain.reminders.models import ReminderState
 
 
 def test_classify_overdue():
-    assert classify_reminder_state(date(2020, 1, 1), today=date(2026, 6, 14)) == ReminderState.OVERDUE
+    assert (
+        classify_reminder_state(date(2020, 1, 1), today=date(2026, 6, 14)) == ReminderState.OVERDUE
+    )
 
 
 def test_classify_due_today():

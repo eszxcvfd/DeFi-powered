@@ -85,7 +85,10 @@ async def test_content_generate_and_edit(client):
 
     patch = await client.patch(
         f"/events/{eid}/content/drafts/{draft_id}",
-        json={"body_text": "Edited draft for Payments Webinar EU.\n\nCTA: Learn more", "editor": "analyst"},
+        json={
+            "body_text": "Edited draft for Payments Webinar EU.\n\nCTA: Learn more",
+            "editor": "analyst",
+        },
     )
     assert patch.status_code == 200
     assert patch.json()["last_editor"] == "analyst"

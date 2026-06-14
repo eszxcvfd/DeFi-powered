@@ -15,7 +15,12 @@ async def test_admin_connector_registry_and_secrets_redacted(client):
             "authentication_mode": "api_key",
             "enabled": True,
             "approved": True,
-            "policy": {"access_mode": "api", "quota_per_day": 100, "quota_used_today": 0, "valid": True},
+            "policy": {
+                "access_mode": "api",
+                "quota_per_day": 100,
+                "quota_used_today": 0,
+                "valid": True,
+            },
             "secret_plaintext": "plaintext-should-not-leak",
         },
     )

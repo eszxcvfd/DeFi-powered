@@ -94,7 +94,9 @@ async def test_event_list_detail_provenance_and_merge(client):
     assert body[0]["observation_count"] >= 2
     assert body[0]["confidence_summary"] in ("high", "medium", "merged")
 
-    filtered = await client.get(f"/campaigns/{cid}/events", params={"q": "Payments", "include_score": "false"})
+    filtered = await client.get(
+        f"/campaigns/{cid}/events", params={"q": "Payments", "include_score": "false"}
+    )
     assert len(filtered.json()) == 1
 
     detail = await client.get(f"/events/{eid1}")

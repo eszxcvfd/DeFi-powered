@@ -51,4 +51,6 @@ def test_no_merge_near_duplicate_title_only():
 
 
 def test_fingerprint_stable():
-    assert canonical_fingerprint("Hello World", "EU") == canonical_fingerprint("hello   world", "eu")
+    assert canonical_fingerprint("Hello World", "EU") == canonical_fingerprint(
+        "hello   world", "eu"
+    )

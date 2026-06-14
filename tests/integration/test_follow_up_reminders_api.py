@@ -35,7 +35,9 @@ PAYLOAD = {
 
 
 async def _lead_with_follow_up(client, due: date) -> str:
-    create = await client.post("/campaigns", json={**PAYLOAD, "name": f"R{uuid4()}", "description": ""})
+    create = await client.post(
+        "/campaigns", json={**PAYLOAD, "name": f"R{uuid4()}", "description": ""}
+    )
     cid = create.json()["id"]
     settings = client.app.state.settings
     url = settings.database_url.replace("sqlite+aiosqlite", "sqlite")

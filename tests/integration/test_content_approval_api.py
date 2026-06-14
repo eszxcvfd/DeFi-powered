@@ -60,11 +60,16 @@ async def test_approve_reject_flow(client):
     await client.post(f"/events/{eid}/rescore")
     gen = await client.post(
         "/content/generate",
-        json={"event_id": str(eid), "settings": {"content_type": "outreach", "platform": "email", "variant_count": 1}},
+        json={
+            "event_id": str(eid),
+            "settings": {"content_type": "outreach", "platform": "email", "variant_count": 1},
+        },
     )
     draft_id = gen.json()["drafts"][0]["id"]
 
-    sub = await client.post(f"/events/{eid}/content/drafts/{draft_id}/submit-for-review", json={"assignee": ""})
+    sub = await client.post(
+        f"/events/{eid}/content/drafts/{draft_id}/submit-for-review", json={"assignee": ""}
+    )
     assert sub.status_code == 200
     assert sub.json()["review_status"] == "in_review"
 
