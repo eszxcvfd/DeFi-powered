@@ -17,10 +17,13 @@ from livelead.infrastructure.queue.broker import ping_redis
 from livelead.interfaces.rest.admin_connectors import router as admin_connectors_router
 from livelead.interfaces.rest.campaign_sources import router as campaign_sources_router
 from livelead.interfaces.rest.campaigns import router as campaigns_router
+from livelead.interfaces.rest.content import router as content_router
 from livelead.interfaces.rest.discovery_jobs import router as discovery_jobs_router
 from livelead.interfaces.rest.events import router as events_router
 from livelead.interfaces.rest.health import router as health_router
+from livelead.interfaces.rest.leads import router as leads_router
 from livelead.interfaces.rest.middleware import RequestLoggingMiddleware
+from livelead.interfaces.rest.reminders import router as reminders_router
 from livelead.runtime.settings import parse_settings
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s %(message)s")
@@ -65,6 +68,9 @@ def create_app() -> FastAPI:
     app.include_router(admin_connectors_router)
     app.include_router(discovery_jobs_router)
     app.include_router(events_router)
+    app.include_router(content_router)
+    app.include_router(leads_router)
+    app.include_router(reminders_router)
     return app
 
 

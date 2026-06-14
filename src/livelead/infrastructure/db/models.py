@@ -3,7 +3,7 @@
 from datetime import datetime
 from uuid import uuid4
 
-from sqlalchemy import Boolean, DateTime, Float, String, Text, func
+from sqlalchemy import Boolean, DateTime, Float, Integer, String, Text, func
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
@@ -141,6 +141,169 @@ class AudienceHypothesisRow(Base):
     generated_by: Mapped[str] = mapped_column(String(64), nullable=False)
     model_version: Mapped[str] = mapped_column(String(64), nullable=False)
     superseded_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class EngagementPlanRow(Base):
+    __tablename__ = "engagement_plans"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    event_id: Mapped[str] = mapped_column(String(36), index=True, nullable=False)
+    campaign_id: Mapped[str] = mapped_column(String(36), index=True, nullable=False)
+    strategy_version: Mapped[str] = mapped_column(String(64), nullable=False)
+    generation_notes_json: Mapped[str] = mapped_column(Text, default="[]")
+    superseded_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+
+class EngagementTaskRow(Base):
+    __tablename__ = "engagement_tasks"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    plan_id: Mapped[str] = mapped_column(String(36), index=True, nullable=False)
+    event_id: Mapped[str] = mapped_column(String(36), index=True, nullable=False)
+    phase: Mapped[str] = mapped_column(String(32), nullable=False)
+    title: Mapped[str] = mapped_column(String(500), nullable=False)
+    rationale: Mapped[str] = mapped_column(Text, nullable=False)
+    status: Mapped[str] = mapped_column(String(32), nullable=False)
+    assignee: Mapped[str] = mapped_column(String(128), default="")
+    deadline: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    notes: Mapped[str] = mapped_column(Text, default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+
+class GeneratedContentDraftRow(Base):
+    __tablename__ = "generated_content_drafts"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    event_id: Mapped[str] = mapped_column(String(36), index=True, nullable=False)
+    campaign_id: Mapped[str] = mapped_column(String(36), index=True, nullable=False)
+    engagement_plan_id: Mapped[str | None] = mapped_column(String(36), nullable=True, index=True)
+    variant_index: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    lifecycle: Mapped[str] = mapped_column(String(32), default="draft")
+    settings_json: Mapped[str] = mapped_column(Text, default="{}")
+    body_text: Mapped[str] = mapped_column(Text, nullable=False)
+    risk_flags_json: Mapped[str] = mapped_column(Text, default="[]")
+    provider: Mapped[str] = mapped_column(String(64), nullable=False)
+    model: Mapped[str] = mapped_column(String(64), nullable=False)
+    prompt_template_version: Mapped[str] = mapped_column(String(64), nullable=False)
+    input_context_summary: Mapped[str] = mapped_column(Text, default="")
+    generated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    last_editor: Mapped[str] = mapped_column(String(128), default="system")
+    body_revision: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    reviewer_assignee: Mapped[str] = mapped_column(String(128), default="")
+    usage_status: Mapped[str] = mapped_column(String(32), default="not_used")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+
+class ContentReviewDecisionRow(Base):
+    __tablename__ = "content_review_decisions"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    draft_id: Mapped[str] = mapped_column(String(36), index=True, nullable=False)
+    event_id: Mapped[str] = mapped_column(String(36), index=True, nullable=False)
+    action: Mapped[str] = mapped_column(String(32), nullable=False)
+    from_status: Mapped[str] = mapped_column(String(32), nullable=False)
+    to_status: Mapped[str] = mapped_column(String(32), nullable=False)
+    actor: Mapped[str] = mapped_column(String(128), nullable=False)
+    note: Mapped[str] = mapped_column(Text, default="")
+    body_revision: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class ContentHandoffRecordRow(Base):
+    __tablename__ = "content_handoff_records"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    draft_id: Mapped[str] = mapped_column(String(36), index=True, nullable=False)
+    event_id: Mapped[str] = mapped_column(String(36), index=True, nullable=False)
+    action: Mapped[str] = mapped_column(String(32), nullable=False)
+    actor: Mapped[str] = mapped_column(String(128), nullable=False)
+    export_format: Mapped[str] = mapped_column(String(32), default="")
+    body_revision: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class LeadRow(Base):
+    __tablename__ = "leads"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    organization_id: Mapped[str] = mapped_column(String(36), index=True, nullable=False)
+    campaign_id: Mapped[str | None] = mapped_column(String(36), index=True, nullable=True)
+    display_name: Mapped[str] = mapped_column(String(300), nullable=False)
+    company: Mapped[str] = mapped_column(String(300), default="")
+    title: Mapped[str] = mapped_column(String(200), default="")
+    public_url: Mapped[str] = mapped_column(String(1024), default="")
+    discovery_source: Mapped[str] = mapped_column(String(200), default="")
+    event_id: Mapped[str | None] = mapped_column(String(36), index=True, nullable=True)
+    interests: Mapped[str] = mapped_column(Text, default="")
+    pain_points: Mapped[str] = mapped_column(Text, default="")
+    owner: Mapped[str] = mapped_column(String(128), default="")
+    stage: Mapped[str] = mapped_column(String(32), default="newly_discovered", index=True)
+    lawful_basis_note: Mapped[str] = mapped_column(Text, default="")
+    follow_up_date: Mapped[str | None] = mapped_column(String(10), nullable=True)
+    notes: Mapped[str] = mapped_column(Text, default="")
+    manual_entry_note: Mapped[str] = mapped_column(Text, default="")
+    origin_kind: Mapped[str] = mapped_column(String(32), default="event")
+    email_hash: Mapped[str] = mapped_column(String(64), default="", index=True)
+    external_id: Mapped[str] = mapped_column(String(128), default="", index=True)
+    created_by: Mapped[str] = mapped_column(String(128), default="analyst")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+
+class FollowUpReminderRow(Base):
+    __tablename__ = "follow_up_reminders"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    organization_id: Mapped[str] = mapped_column(String(36), index=True, nullable=False)
+    lead_id: Mapped[str] = mapped_column(String(36), index=True, nullable=False)
+    owner: Mapped[str] = mapped_column(String(128), default="")
+    due_date: Mapped[str] = mapped_column(String(10), nullable=False, index=True)
+    state: Mapped[str] = mapped_column(String(32), default="scheduled", index=True)
+    last_actor: Mapped[str] = mapped_column(String(128), default="")
+    last_action_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+
+class ReminderHistoryRow(Base):
+    __tablename__ = "reminder_history"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    reminder_id: Mapped[str] = mapped_column(String(36), index=True, nullable=False)
+    lead_id: Mapped[str] = mapped_column(String(36), index=True, nullable=False)
+    kind: Mapped[str] = mapped_column(String(32), nullable=False)
+    actor: Mapped[str] = mapped_column(String(128), nullable=False)
+    note: Mapped[str] = mapped_column(Text, default="")
+    from_due_date: Mapped[str] = mapped_column(String(10), default="")
+    to_due_date: Mapped[str] = mapped_column(String(10), default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class LeadActivityRow(Base):
+    __tablename__ = "lead_activities"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    lead_id: Mapped[str] = mapped_column(String(36), index=True, nullable=False)
+    kind: Mapped[str] = mapped_column(String(32), nullable=False)
+    actor: Mapped[str] = mapped_column(String(128), nullable=False)
+    body: Mapped[str] = mapped_column(Text, default="")
+    from_stage: Mapped[str] = mapped_column(String(32), default="")
+    to_stage: Mapped[str] = mapped_column(String(32), default="")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 

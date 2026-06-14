@@ -4,7 +4,11 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from livelead.application.audience.service import AudienceService
+from livelead.application.content.service import ContentService
+from livelead.application.engagement.service import EngagementService
+from livelead.application.leads.service import LeadService
 from livelead.application.scoring.service import ScoringService
+from livelead.domain.content.review import is_ready_for_later_use
 from livelead.infrastructure.db.repositories.campaigns import CampaignRepository
 from livelead.infrastructure.db.repositories.event_scores import EventScoreRepository
 from livelead.infrastructure.db.repositories.events import (
@@ -17,13 +21,19 @@ from livelead.interfaces.rest.events_schemas import (
     AudienceAnalysisSchema,
     AudienceEvidenceSchema,
     AudienceHypothesisSchema,
+    EngagementPlanStateSchema,
+    EngagementPlanSummarySchema,
+    EngagementTaskSchema,
+    EngagementTaskUpdateSchema,
     EventDetailSchema,
+    EventLeadLinkSchema,
     EventListItemSchema,
     EventProvenanceSchema,
     EventScoreDetailSchema,
     EventScoreSummarySchema,
     EventSourceObservationSchema,
     FieldConfidenceSchema,
+    GeneratedContentSummarySchema,
     ScoreComponentSchema,
 )
 
@@ -61,6 +71,35 @@ def _score_detail(score) -> EventScoreDetailSchema:
         ],
         missing_fields=list(score.explanation.missing_fields),
         score_reducers=list(score.explanation.score_reducers),
+    )
+
+
+def _engagement_schema(state) -> EngagementPlanStateSchema:
+    plan_schema = None
+    if state.plan:
+        plan_schema = EngagementPlanSummarySchema(
+            id=state.plan.id,
+            strategy_version=state.plan.strategy_version,
+            created_at=state.plan.created_at,
+            updated_at=state.plan.updated_at,
+        )
+    return EngagementPlanStateSchema(
+        state=state.state,
+        plan=plan_schema,
+        generation_notes=list(state.generation_notes),
+        tasks=[
+            EngagementTaskSchema(
+                id=t.id,
+                phase=t.phase.value,
+                title=t.title,
+                rationale=t.rationale,
+                status=t.status.value,
+                assignee=t.assignee,
+                deadline=t.deadline,
+                notes=t.notes,
+            )
+            for t in state.tasks
+        ],
     )
 
 
@@ -175,6 +214,9 @@ async def get_event(
     src_ids = await events.distinct_source_ids(event_id)
     score = await EventScoreRepository(session).get_current(event_id, event.campaign_id)
     audience = await AudienceService(session).get_or_generate(event_id, tenant.organization_id)
+    engagement = await EngagementService(session).get_plan_state(event_id, tenant.organization_id)
+    draft_list = await ContentService(session).list_drafts(event_id, tenant.organization_id) or []
+    lead_summary = await LeadService(session).linked_summary_for_event(event_id, tenant.organization_id)
     await session.commit()
     prov = _provenance_schema(row, len(obs) or 1, src_ids)
     return EventDetailSchema(
@@ -203,7 +245,63 @@ async def get_event(
         score=_score_detail(score) if score else None,
         score_state="ready" if score else "missing",
         audience=_audience_schema(audience),
+        engagement=_engagement_schema(engagement),
+        generated_content=[
+            GeneratedContentSummarySchema(
+                id=d.id,
+                variant_index=d.variant_index,
+                content_type=d.settings.content_type.value,
+                platform=d.settings.platform.value,
+                review_status=d.review_status.value,
+                ready_for_use=is_ready_for_later_use(d.review_status),
+                body_preview=d.body_text[:160] + ("…" if len(d.body_text) > 160 else ""),
+                risk_flag_count=len(d.risk_flags),
+                last_editor=d.metadata.last_editor if d.metadata else "system",
+            )
+            for d in draft_list
+        ],
+        leads=EventLeadLinkSchema(**lead_summary),
     )
+
+
+@router.post("/events/{event_id}/engagement-plans", response_model=EventDetailSchema)
+async def create_engagement_plan(
+    event_id: UUID,
+    tenant: TenantContext = Depends(get_tenant_context),
+    session: AsyncSession = Depends(get_db_session),
+):
+    svc = EngagementService(session)
+    result = await svc.create_or_refresh_plan(event_id, tenant.organization_id)
+    if result.state == "blocked":
+        raise HTTPException(status_code=409, detail=result.generation_notes[0] if result.generation_notes else "cannot create plan")
+    await session.commit()
+    return await get_event(event_id, tenant, session)
+
+
+@router.patch("/events/{event_id}/engagement-tasks/{task_id}", response_model=EventDetailSchema)
+async def patch_engagement_task(
+    event_id: UUID,
+    task_id: UUID,
+    body: EngagementTaskUpdateSchema,
+    tenant: TenantContext = Depends(get_tenant_context),
+    session: AsyncSession = Depends(get_db_session),
+):
+    svc = EngagementService(session)
+    try:
+        updated = await svc.update_task(
+            event_id,
+            task_id,
+            tenant.organization_id,
+            status=body.status,
+            assignee=body.assignee,
+            notes=body.notes,
+        )
+    except ValueError:
+        raise HTTPException(status_code=400, detail="invalid task status transition") from None
+    if updated is None:
+        raise HTTPException(status_code=404, detail="task not found")
+    await session.commit()
+    return await get_event(event_id, tenant, session)
 
 
 @router.post("/events/{event_id}/audience/refresh", response_model=EventDetailSchema)

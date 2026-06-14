@@ -94,6 +94,55 @@ class AudienceAnalysisSchema(BaseModel):
     strategy_version: str = ""
 
 
+class EngagementTaskSchema(BaseModel):
+    id: UUID
+    phase: str
+    title: str
+    rationale: str
+    status: str
+    assignee: str = ""
+    deadline: datetime | None = None
+    notes: str = ""
+
+
+class EngagementPlanSummarySchema(BaseModel):
+    id: UUID
+    strategy_version: str
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
+
+
+class EngagementPlanStateSchema(BaseModel):
+    state: str
+    plan: EngagementPlanSummarySchema | None = None
+    tasks: list[EngagementTaskSchema] = Field(default_factory=list)
+    generation_notes: list[str] = Field(default_factory=list)
+
+
+class EngagementTaskUpdateSchema(BaseModel):
+    status: str | None = None
+    assignee: str | None = None
+    notes: str | None = None
+
+
+class EventLeadLinkSchema(BaseModel):
+    linked_count: int = 0
+    linked_lead_ids: list[str] = Field(default_factory=list)
+    has_linked_lead: bool = False
+
+
+class GeneratedContentSummarySchema(BaseModel):
+    id: UUID
+    variant_index: int
+    content_type: str
+    platform: str
+    review_status: str = "draft"
+    ready_for_use: bool = False
+    body_preview: str
+    risk_flag_count: int = 0
+    last_editor: str = "system"
+
+
 class EventDetailSchema(BaseModel):
     id: UUID
     campaign_id: UUID
@@ -110,11 +159,13 @@ class EventDetailSchema(BaseModel):
     score: EventScoreDetailSchema | None = None
     score_state: str = "missing"
     audience: AudienceAnalysisSchema
+    engagement: EngagementPlanStateSchema
+    generated_content: list[GeneratedContentSummarySchema] = Field(default_factory=list)
+    leads: EventLeadLinkSchema = Field(default_factory=EventLeadLinkSchema)
     deferred: dict[str, str] = Field(
         default_factory=lambda: {
             "audience_feedback": "planned",
-            "engagement": "planned",
-            "leads": "planned",
+            "content_approval": "planned",
             "browser": "planned",
         }
     )
