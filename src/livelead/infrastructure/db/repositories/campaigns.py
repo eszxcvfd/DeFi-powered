@@ -17,7 +17,9 @@ class CampaignRepository:
     async def list_for_organization(self, organization_id: UUID) -> list[Campaign]:
         org = str(organization_id)
         result = await self._session.execute(
-            select(CampaignRow).where(CampaignRow.organization_id == org).order_by(CampaignRow.updated_at.desc())
+            select(CampaignRow)
+            .where(CampaignRow.organization_id == org)
+            .order_by(CampaignRow.updated_at.desc())
         )
         return [row_to_campaign(r) for r in result.scalars().all()]
 

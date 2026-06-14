@@ -30,19 +30,25 @@ class EngagementService:
 
         plan = await self._engagement.get_current_plan(event_id)
         if not plan:
-            return EngagementPlanState(state="missing", generation_notes=("No engagement plan yet.",))
+            return EngagementPlanState(
+                state="missing", generation_notes=("No engagement plan yet.",)
+            )
 
         tasks = await self._engagement.list_tasks_for_plan(plan.id)
         return EngagementPlanState(state="ready", plan=plan, tasks=tuple(tasks))
 
-    async def create_or_refresh_plan(self, event_id: UUID, organization_id: UUID) -> EngagementPlanState:
+    async def create_or_refresh_plan(
+        self, event_id: UUID, organization_id: UUID
+    ) -> EngagementPlanState:
         event = await self._events.get(event_id, organization_id)
         if not event:
             return EngagementPlanState(state="blocked", generation_notes=("Event not found.",))
 
         campaign = await self._campaigns.get(event.campaign_id, organization_id)
         if not campaign:
-            return EngagementPlanState(state="blocked", generation_notes=("Campaign context missing.",))
+            return EngagementPlanState(
+                state="blocked", generation_notes=("Campaign context missing.",)
+            )
 
         score = await self._scores.get_current(event_id, event.campaign_id)
         if not score:

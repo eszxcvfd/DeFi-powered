@@ -53,6 +53,10 @@ class AppSettings(BaseSettings):
         default_factory=lambda: Path("data/browser_profiles"),
         description="Per-session isolated profile storage root",
     )
+    artifact_root: Path = Field(
+        default_factory=lambda: Path("data"),
+        description="Root for browser debug artifact blobs (under browser_artifacts/)",
+    )
     discovery_use_mock_connectors: bool = Field(
         default=False,
         description="If true, discovery uses deterministic mock sources (tests only)",

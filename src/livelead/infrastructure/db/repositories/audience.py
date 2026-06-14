@@ -27,7 +27,9 @@ class AudienceRepository:
         )
         return [row_to_hypothesis(r) for r in result.scalars().all()]
 
-    async def replace_for_event(self, event_id: UUID, hypotheses: list[AudienceHypothesis]) -> list[AudienceHypothesis]:
+    async def replace_for_event(
+        self, event_id: UUID, hypotheses: list[AudienceHypothesis]
+    ) -> list[AudienceHypothesis]:
         now = datetime.now(UTC)
         existing = await self._session.execute(
             select(AudienceHypothesisRow).where(

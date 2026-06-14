@@ -27,7 +27,9 @@ from livelead.interfaces.rest.deps import get_db_session
 router = APIRouter(tags=["content"])
 
 
-def _draft_detail(d, history: list | None = None, handoff_history: list | None = None) -> ContentDraftDetailSchema:
+def _draft_detail(
+    d, history: list | None = None, handoff_history: list | None = None
+) -> ContentDraftDetailSchema:
     assert d.metadata
     status = d.review_status
     handoffs = handoff_history or []
@@ -56,7 +58,8 @@ def _draft_detail(d, history: list | None = None, handoff_history: list | None =
         ),
         body_text=d.body_text,
         risk_flags=[
-            ContentRiskFlagSchema(code=f.code.value, message=f.message, severity=f.severity) for f in d.risk_flags
+            ContentRiskFlagSchema(code=f.code.value, message=f.message, severity=f.severity)
+            for f in d.risk_flags
         ],
         provider=d.metadata.provider,
         model=d.metadata.model,
@@ -160,7 +163,9 @@ async def list_content_drafts(
     return out
 
 
-@router.patch("/events/{event_id}/content/drafts/{draft_id}", response_model=ContentDraftDetailSchema)
+@router.patch(
+    "/events/{event_id}/content/drafts/{draft_id}", response_model=ContentDraftDetailSchema
+)
 async def patch_content_draft(
     event_id: UUID,
     draft_id: UUID,
@@ -182,7 +187,10 @@ async def patch_content_draft(
     return await _detail_with_history(svc, updated)
 
 
-@router.post("/events/{event_id}/content/drafts/{draft_id}/submit-for-review", response_model=ContentDraftDetailSchema)
+@router.post(
+    "/events/{event_id}/content/drafts/{draft_id}/submit-for-review",
+    response_model=ContentDraftDetailSchema,
+)
 async def submit_for_review(
     event_id: UUID,
     draft_id: UUID,
@@ -259,6 +267,7 @@ async def reject_content(
         raise HTTPException(status_code=404, detail="draft not found")
     await session.commit()
     return await _detail_with_history(svc, updated)
+
 
 @router.post("/content/{draft_id}/record-copy", response_model=ContentDraftDetailSchema)
 async def record_content_copy(

@@ -39,7 +39,11 @@ def build_campaign_forest(campaigns: list[Campaign]) -> list[CampaignListNode]:
     def node_for(c: Campaign, depth: int) -> CampaignListNode:
         kids = children_map.get(c.id, [])
         child_nodes = tuple(node_for(ch, depth + 1) for ch in kids)
-        parent_name = by_id[c.parent_campaign_id].name if c.parent_campaign_id and c.parent_campaign_id in by_id else None
+        parent_name = (
+            by_id[c.parent_campaign_id].name
+            if c.parent_campaign_id and c.parent_campaign_id in by_id
+            else None
+        )
         return CampaignListNode(
             campaign=c,
             parent_campaign_id=c.parent_campaign_id,

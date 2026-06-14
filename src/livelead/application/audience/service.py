@@ -19,7 +19,9 @@ class AudienceService:
         self._campaigns = CampaignRepository(session)
         self._audience = AudienceRepository(session)
 
-    async def get_or_generate(self, event_id: UUID, organization_id: UUID, *, refresh: bool = False) -> AudienceAnalysisState:
+    async def get_or_generate(
+        self, event_id: UUID, organization_id: UUID, *, refresh: bool = False
+    ) -> AudienceAnalysisState:
         event = await self._events.get(event_id, organization_id)
         if not event:
             return AudienceAnalysisState(state="pending", generation_notes=("Event not found.",))
@@ -31,12 +33,16 @@ class AudienceService:
                 return AudienceAnalysisState(
                     state="ready",
                     hypotheses=tuple(current),
-                    strategy_version=current[0].model_version if current else AUDIENCE_STRATEGY_VERSION,
+                    strategy_version=current[0].model_version
+                    if current
+                    else AUDIENCE_STRATEGY_VERSION,
                 )
 
         campaign = await self._campaigns.get(event.campaign_id, organization_id)
         if not campaign:
-            return AudienceAnalysisState(state="empty", generation_notes=("Campaign context missing.",))
+            return AudienceAnalysisState(
+                state="empty", generation_notes=("Campaign context missing.",)
+            )
 
         obs = await self._events.list_observations(event_id)
         ctx = GenerationContext(event=event, campaign=campaign, observations=tuple(obs))

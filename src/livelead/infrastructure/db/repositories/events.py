@@ -121,7 +121,9 @@ class EventRepository:
                 has_region=bool(event.region),
                 has_starts_at=event.starts_at is not None,
             )
-            meta["field_confidence"] = [{"field": f.field, "trust": f.trust.value, "note": f.note} for f in fields]
+            meta["field_confidence"] = [
+                {"field": f.field, "trust": f.trust.value, "note": f.note} for f in fields
+            ]
             meta["confidence_summary"] = summary_confidence(fields)
             meta.setdefault("merge_notes", [])
         row = EventRow(

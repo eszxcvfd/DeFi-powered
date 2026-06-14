@@ -13,7 +13,9 @@ TERMINAL = frozenset(
 )
 
 
-def aggregate_job_status(source_statuses: list[SourceRunStatus], *, cancelled: bool) -> DiscoveryJobStatus:
+def aggregate_job_status(
+    source_statuses: list[SourceRunStatus], *, cancelled: bool
+) -> DiscoveryJobStatus:
     if cancelled:
         return DiscoveryJobStatus.CANCELLED
     if any(s == SourceRunStatus.NEEDS_USER_ACTION for s in source_statuses):

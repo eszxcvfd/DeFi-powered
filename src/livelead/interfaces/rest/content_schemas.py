@@ -17,7 +17,9 @@ class ContentGenerationSettingsSchema(BaseModel):
 
 class ContentGenerateRequestSchema(BaseModel):
     event_id: UUID
-    settings: ContentGenerationSettingsSchema = Field(default_factory=ContentGenerationSettingsSchema)
+    settings: ContentGenerationSettingsSchema = Field(
+        default_factory=ContentGenerationSettingsSchema
+    )
 
 
 class ContentRiskFlagSchema(BaseModel):

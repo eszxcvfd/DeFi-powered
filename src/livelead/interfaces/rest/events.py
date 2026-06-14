@@ -164,7 +164,9 @@ async def list_organization_events(
     )
     counts = await events.observation_counts([e.id for e in rows])
     campaigns = CampaignRepository(session)
-    name_by_id = {c.id: c.name for c in await campaigns.list_for_organization(tenant.organization_id)}
+    name_by_id = {
+        c.id: c.name for c in await campaigns.list_for_organization(tenant.organization_id)
+    }
     score_map: dict[UUID, object] = {}
     if include_score and rows:
         scores = EventScoreRepository(session)
@@ -300,7 +302,9 @@ async def get_event(
     audience = await AudienceService(session).get_or_generate(event_id, tenant.organization_id)
     engagement = await EngagementService(session).get_plan_state(event_id, tenant.organization_id)
     draft_list = await ContentService(session).list_drafts(event_id, tenant.organization_id) or []
-    lead_summary = await LeadService(session).linked_summary_for_event(event_id, tenant.organization_id)
+    lead_summary = await LeadService(session).linked_summary_for_event(
+        event_id, tenant.organization_id
+    )
     await session.commit()
     prov = _provenance_schema(row, len(obs) or 1, src_ids)
     return EventDetailSchema(
@@ -357,7 +361,10 @@ async def create_engagement_plan(
     svc = EngagementService(session)
     result = await svc.create_or_refresh_plan(event_id, tenant.organization_id)
     if result.state == "blocked":
-        raise HTTPException(status_code=409, detail=result.generation_notes[0] if result.generation_notes else "cannot create plan")
+        raise HTTPException(
+            status_code=409,
+            detail=result.generation_notes[0] if result.generation_notes else "cannot create plan",
+        )
     await session.commit()
     return await get_event(event_id, tenant, session)
 

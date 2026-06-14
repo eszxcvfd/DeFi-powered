@@ -23,7 +23,9 @@ def parse_create_body(body: dict) -> tuple[CampaignWriteData | None, list[str]]:
     name = body.get("name", "")
     errors.extend(validate_campaign_name(name))
     raw_weights = body.get("scoring_weights") or {}
-    weights, w_err = validate_scoring_weights({k: float(v) for k, v in raw_weights.items()} if raw_weights else {})
+    weights, w_err = validate_scoring_weights(
+        {k: float(v) for k, v in raw_weights.items()} if raw_weights else {}
+    )
     errors.extend(w_err)
     if errors:
         return None, errors
@@ -71,7 +73,9 @@ def parse_patch_body(body: dict) -> tuple[dict | None, list[str]]:
         patch["icp"] = _icp_from_dict(body["icp"])
     if "scoring_weights" in body:
         raw = body["scoring_weights"] or {}
-        weights, w_err = validate_scoring_weights({k: float(v) for k, v in raw.items()} if raw else {})
+        weights, w_err = validate_scoring_weights(
+            {k: float(v) for k, v in raw.items()} if raw else {}
+        )
         errors.extend(w_err)
         if weights:
             patch["scoring_weights"] = weights

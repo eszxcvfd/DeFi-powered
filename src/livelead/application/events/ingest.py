@@ -60,12 +60,16 @@ def ingest_finding(
 ) -> tuple[str, str]:
     """Returns (event_id, action) where action is created|merged|skipped_duplicate_obs."""
     campaign_key = str(campaign_id)
-    candidates = session.execute(
-        select(EventRow).where(
-            EventRow.campaign_id == campaign_key,
-            EventRow.organization_id == str(organization_id),
+    candidates = (
+        session.execute(
+            select(EventRow).where(
+                EventRow.campaign_id == campaign_key,
+                EventRow.organization_id == str(organization_id),
+            )
         )
-    ).scalars().all()
+        .scalars()
+        .all()
+    )
 
     for existing in candidates:
         decision = decide_merge(
@@ -125,7 +129,9 @@ def ingest_finding(
         has_starts_at=True,
     )
     meta = dict(event.metadata_json)
-    meta["field_confidence"] = [{"field": f.field, "trust": f.trust.value, "note": f.note} for f in fields]
+    meta["field_confidence"] = [
+        {"field": f.field, "trust": f.trust.value, "note": f.note} for f in fields
+    ]
     meta["confidence_summary"] = summary_confidence(fields)
     meta["merge_notes"] = []
 

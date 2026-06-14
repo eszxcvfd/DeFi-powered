@@ -108,7 +108,9 @@ def _component_icp(event: CanonicalEvent, icp: IcpCriteria) -> ScoreComponent:
     )
 
 
-def _heuristic_component(key: str, event: CanonicalEvent, base: float, field_name: str) -> ScoreComponent:
+def _heuristic_component(
+    key: str, event: CanonicalEvent, base: float, field_name: str
+) -> ScoreComponent:
     missing: list[str] = []
     raw = base
     if key == "organizer_reputation":

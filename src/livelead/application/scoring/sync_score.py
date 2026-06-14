@@ -24,7 +24,9 @@ def _sync_session() -> Session:
     return sessionmaker(bind=engine)()
 
 
-def _append_score_sync(session: Session, event_id: UUID, campaign_id: UUID, result: ScoreResult) -> None:
+def _append_score_sync(
+    session: Session, event_id: UUID, campaign_id: UUID, result: ScoreResult
+) -> None:
     now = datetime.now(UTC)
     existing = session.execute(
         select(EventScoreRow).where(
@@ -67,12 +69,16 @@ def score_all_for_campaign_sync(campaign_id: str, organization_id: str) -> int:
         if not camp_row:
             return 0
         campaign = row_to_campaign(camp_row)
-        events = session.execute(
-            select(EventRow).where(
-                EventRow.campaign_id == campaign_id,
-                EventRow.organization_id == organization_id,
+        events = (
+            session.execute(
+                select(EventRow).where(
+                    EventRow.campaign_id == campaign_id,
+                    EventRow.organization_id == organization_id,
+                )
             )
-        ).scalars().all()
+            .scalars()
+            .all()
+        )
         for erow in events:
             eid = UUID(erow.id)
             cid = UUID(campaign_id)

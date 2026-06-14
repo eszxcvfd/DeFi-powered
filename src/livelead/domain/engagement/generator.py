@@ -35,7 +35,9 @@ class PlanGenerationContext:
 def _template_tasks(ctx: PlanGenerationContext) -> list[tuple[EngagementPhase, str, str]]:
     title = ctx.event.canonical_title
     focus = ctx.campaign.product_or_service_focus or ctx.campaign.target_industry or "your offer"
-    region = ctx.event.region or (ctx.campaign.market_regions[0] if ctx.campaign.market_regions else "")
+    region = ctx.event.region or (
+        ctx.campaign.market_regions[0] if ctx.campaign.market_regions else ""
+    )
     top_segment = ctx.hypotheses[0].segment_name if ctx.hypotheses else "target attendees"
 
     tasks: list[tuple[EngagementPhase, str, str]] = [
@@ -139,7 +141,9 @@ def generate_engagement_plan(ctx: PlanGenerationContext) -> EngagementPlanState:
         )
 
     if not built:
-        return EngagementPlanState(state="blocked", generation_notes=("All suggested tasks were filtered by guardrails.",))
+        return EngagementPlanState(
+            state="blocked", generation_notes=("All suggested tasks were filtered by guardrails.",)
+        )
 
     plan = EngagementPlan(
         id=plan_id,

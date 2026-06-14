@@ -31,7 +31,8 @@ def build_context_preview(
         event_description=event.description or event.organizer,
         campaign_focus=campaign.product_or_service_focus or campaign.target_industry,
         score_summary=score_s,
-        audience_summary=aud or (audience.generation_notes[0] if audience.generation_notes else "—"),
+        audience_summary=aud
+        or (audience.generation_notes[0] if audience.generation_notes else "—"),
         plan_task_count=tasks,
         notes=tuple(notes),
     )

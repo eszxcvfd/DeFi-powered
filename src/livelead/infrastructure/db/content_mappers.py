@@ -122,5 +122,8 @@ def row_to_decision(row: ContentReviewDecisionRow) -> ContentReviewDecision:
 
 def draft_to_flags_json(draft: GeneratedContentDraft) -> str:
     return json.dumps(
-        [{"code": f.code.value, "message": f.message, "severity": f.severity} for f in draft.risk_flags]
+        [
+            {"code": f.code.value, "message": f.message, "severity": f.severity}
+            for f in draft.risk_flags
+        ]
     )

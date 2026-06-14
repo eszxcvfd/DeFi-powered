@@ -39,7 +39,11 @@ def row_to_campaign(row: CampaignRow) -> Campaign:
         positive_keywords=tuple(icp_data.get("positive_keywords", [])),
         excluded_keywords=tuple(icp_data.get("excluded_keywords", [])),
     )
-    weights = ScoringWeights(weights={k: float(v) for k, v in weights_data.items()}) if weights_data else ScoringWeights()
+    weights = (
+        ScoringWeights(weights={k: float(v) for k, v in weights_data.items()})
+        if weights_data
+        else ScoringWeights()
+    )
     return Campaign(
         id=UUID(row.id),
         organization_id=UUID(row.organization_id),

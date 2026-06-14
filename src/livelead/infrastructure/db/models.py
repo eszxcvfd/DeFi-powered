@@ -348,6 +348,87 @@ class BrowserSessionRow(Base):
     stop_requested: Mapped[bool] = mapped_column(Boolean, default=False)
     error_summary: Mapped[str | None] = mapped_column(Text, nullable=True)
     worker_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    debug_enabled: Mapped[bool] = mapped_column(Boolean, default=False)
+    latest_artifact_summary: Mapped[str] = mapped_column(Text, default="")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     ended_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    browser_profile_id: Mapped[str | None] = mapped_column(String(36), index=True, nullable=True)
+
+
+class BrowserProfileRow(Base):
+    __tablename__ = "browser_profiles"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    organization_id: Mapped[str] = mapped_column(String(36), index=True, nullable=False)
+    name: Mapped[str] = mapped_column(String(200), nullable=False)
+    lifecycle_state: Mapped[str] = mapped_column(String(32), nullable=False, index=True)
+    created_by: Mapped[str] = mapped_column(String(128), nullable=False)
+    expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    locked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    consent_status: Mapped[str] = mapped_column(String(32), default="none")
+    consent_recorded_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    consent_actor: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    state_material_ciphertext: Mapped[str | None] = mapped_column(Text, nullable=True)
+    last_used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class BrowserDebugArtifactRow(Base):
+    __tablename__ = "browser_debug_artifacts"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    session_id: Mapped[str] = mapped_column(String(36), index=True, nullable=False)
+    organization_id: Mapped[str] = mapped_column(String(36), index=True, nullable=False)
+    artifact_type: Mapped[str] = mapped_column(String(32), nullable=False)
+    capture_mode: Mapped[str] = mapped_column(String(32), nullable=False)
+    status: Mapped[str] = mapped_column(String(32), nullable=False)
+    storage_path: Mapped[str] = mapped_column(String(1024), nullable=False)
+    content_type: Mapped[str] = mapped_column(String(128), nullable=False)
+    byte_size: Mapped[int] = mapped_column(Integer, default=0)
+    captured_by: Mapped[str] = mapped_column(String(128), nullable=False)
+    summary: Mapped[str] = mapped_column(Text, default="")
+    redacted: Mapped[bool] = mapped_column(Boolean, default=False)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class BrowserSessionActionRow(Base):
+    __tablename__ = "browser_session_actions"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    session_id: Mapped[str] = mapped_column(String(36), index=True, nullable=False)
+    organization_id: Mapped[str] = mapped_column(String(36), index=True, nullable=False)
+    actor: Mapped[str] = mapped_column(String(128), nullable=False)
+    action_type: Mapped[str] = mapped_column(String(32), nullable=False)
+    parameters_json: Mapped[str] = mapped_column(Text, default="{}")
+    lifecycle: Mapped[str] = mapped_column(String(32), nullable=False)
+    summary: Mapped[str] = mapped_column(Text, default="")
+    detail: Mapped[str | None] = mapped_column(Text, nullable=True)
+    policy_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class BrowserActionConfirmationRow(Base):
+    __tablename__ = "browser_action_confirmations"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    session_id: Mapped[str] = mapped_column(String(36), index=True, nullable=False)
+    organization_id: Mapped[str] = mapped_column(String(36), index=True, nullable=False)
+    requested_by: Mapped[str] = mapped_column(String(128), nullable=False)
+    action_type: Mapped[str] = mapped_column(String(32), nullable=False)
+    parameters_json: Mapped[str] = mapped_column(Text, default="{}")
+    preview_json: Mapped[str] = mapped_column(Text, default="{}")
+    state: Mapped[str] = mapped_column(String(32), nullable=False)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    confirmed_by: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    confirmed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    cancelled_by: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    cancelled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    executed_action_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    execution_lifecycle: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    execution_summary: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

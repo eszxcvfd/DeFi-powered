@@ -9,8 +9,12 @@ _ALLOWED: dict[EngagementTaskStatus, frozenset[EngagementTaskStatus]] = {
     EngagementTaskStatus.IN_PROGRESS: frozenset(
         {EngagementTaskStatus.TODO, EngagementTaskStatus.DONE, EngagementTaskStatus.SKIPPED}
     ),
-    EngagementTaskStatus.DONE: frozenset({EngagementTaskStatus.IN_PROGRESS, EngagementTaskStatus.TODO}),
-    EngagementTaskStatus.SKIPPED: frozenset({EngagementTaskStatus.TODO, EngagementTaskStatus.IN_PROGRESS}),
+    EngagementTaskStatus.DONE: frozenset(
+        {EngagementTaskStatus.IN_PROGRESS, EngagementTaskStatus.TODO}
+    ),
+    EngagementTaskStatus.SKIPPED: frozenset(
+        {EngagementTaskStatus.TODO, EngagementTaskStatus.IN_PROGRESS}
+    ),
 }
 
 

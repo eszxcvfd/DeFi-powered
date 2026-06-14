@@ -30,7 +30,10 @@ class LeadRepository:
         if discovery_source:
             q = q.where(LeadRow.discovery_source == discovery_source)
         if due_before:
-            q = q.where(LeadRow.follow_up_date.is_not(None), LeadRow.follow_up_date <= due_before.isoformat())
+            q = q.where(
+                LeadRow.follow_up_date.is_not(None),
+                LeadRow.follow_up_date <= due_before.isoformat(),
+            )
         q = q.order_by(LeadRow.updated_at.desc())
         result = await self._session.execute(q)
         return [row_to_lead(r) for r in result.scalars().all()]
@@ -43,7 +46,9 @@ class LeadRepository:
 
     async def get(self, lead_id: UUID, organization_id: UUID) -> LeadRecord | None:
         result = await self._session.execute(
-            select(LeadRow).where(LeadRow.id == str(lead_id), LeadRow.organization_id == str(organization_id))
+            select(LeadRow).where(
+                LeadRow.id == str(lead_id), LeadRow.organization_id == str(organization_id)
+            )
         )
         row = result.scalars().first()
         return row_to_lead(row) if row else None
@@ -62,9 +67,13 @@ class LeadRepository:
         await self._session.flush()
         return row_to_lead(row)
 
-    async def save_fields(self, lead_id: UUID, organization_id: UUID, **fields: object) -> LeadRecord | None:
+    async def save_fields(
+        self, lead_id: UUID, organization_id: UUID, **fields: object
+    ) -> LeadRecord | None:
         result = await self._session.execute(
-            select(LeadRow).where(LeadRow.id == str(lead_id), LeadRow.organization_id == str(organization_id))
+            select(LeadRow).where(
+                LeadRow.id == str(lead_id), LeadRow.organization_id == str(organization_id)
+            )
         )
         row = result.scalars().first()
         if not row:

@@ -19,7 +19,9 @@ class FieldConfidence:
     note: str = ""
 
 
-def confidence_for_new_event(*, has_organizer: bool, has_region: bool, has_starts_at: bool) -> list[FieldConfidence]:
+def confidence_for_new_event(
+    *, has_organizer: bool, has_region: bool, has_starts_at: bool
+) -> list[FieldConfidence]:
     fields: list[FieldConfidence] = [
         FieldConfidence("canonical_title", FieldTrust.OBSERVED, "From source observation title"),
         FieldConfidence("source_url", FieldTrust.OBSERVED, "From source observation URL"),
@@ -34,7 +36,9 @@ def confidence_for_new_event(*, has_organizer: bool, has_region: bool, has_start
     else:
         fields.append(FieldConfidence("region", FieldTrust.INFERRED, "Not provided by source"))
     if has_starts_at:
-        fields.append(FieldConfidence("starts_at", FieldTrust.INFERRED, "Derived scheduling placeholder"))
+        fields.append(
+            FieldConfidence("starts_at", FieldTrust.INFERRED, "Derived scheduling placeholder")
+        )
     else:
         fields.append(FieldConfidence("starts_at", FieldTrust.INFERRED, "Missing start time"))
     return fields
@@ -42,16 +46,28 @@ def confidence_for_new_event(*, has_organizer: bool, has_region: bool, has_start
 
 def confidence_after_merge() -> list[FieldConfidence]:
     return [
-        FieldConfidence("canonical_title", FieldTrust.MERGED, "Retained from first canonical record"),
-        FieldConfidence("description", FieldTrust.MERGED, "May combine multiple source observations"),
-        FieldConfidence("organizer", FieldTrust.MERGED, "May differ across sources; canonical value retained"),
-        FieldConfidence("region", FieldTrust.MERGED, "May differ across sources; canonical value retained"),
+        FieldConfidence(
+            "canonical_title", FieldTrust.MERGED, "Retained from first canonical record"
+        ),
+        FieldConfidence(
+            "description", FieldTrust.MERGED, "May combine multiple source observations"
+        ),
+        FieldConfidence(
+            "organizer", FieldTrust.MERGED, "May differ across sources; canonical value retained"
+        ),
+        FieldConfidence(
+            "region", FieldTrust.MERGED, "May differ across sources; canonical value retained"
+        ),
     ]
 
 
 def summary_confidence(fields: list[FieldConfidence]) -> str:
     trusts = {f.trust for f in fields}
-    if FieldTrust.OBSERVED in trusts and FieldTrust.INFERRED not in trusts and FieldTrust.MERGED not in trusts:
+    if (
+        FieldTrust.OBSERVED in trusts
+        and FieldTrust.INFERRED not in trusts
+        and FieldTrust.MERGED not in trusts
+    ):
         return "high"
     if FieldTrust.MERGED in trusts:
         return "merged"

@@ -107,7 +107,11 @@ async def set_campaign_sources(
         if not d.runnable:
             raise HTTPException(
                 status_code=409,
-                detail={"message": "source not runnable", "reasons": list(d.reasons), "source_id": str(sid)},
+                detail={
+                    "message": "source not runnable",
+                    "reasons": list(d.reasons),
+                    "source_id": str(sid),
+                },
             )
     await repo.set_campaign_sources(campaign_id, tenant.organization_id, body.source_ids)
     await session.commit()

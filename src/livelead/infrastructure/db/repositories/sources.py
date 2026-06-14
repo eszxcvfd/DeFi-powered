@@ -59,7 +59,16 @@ class SourceRepository:
         )
 
     async def apply_patch(self, row: SourceRow, patch: dict) -> SourceGovernance:
-        for field in ("name", "domain", "connector_type", "automation_engine", "authentication_mode", "enabled", "approved", "approved_by"):
+        for field in (
+            "name",
+            "domain",
+            "connector_type",
+            "automation_engine",
+            "authentication_mode",
+            "enabled",
+            "approved",
+            "approved_by",
+        ):
             if field in patch and patch[field] is not None:
                 setattr(row, field, patch[field])
         if "approved" in patch and patch["approved"]:
@@ -72,7 +81,9 @@ class SourceRepository:
         await self._session.flush()
         return row_to_source(row)
 
-    async def set_campaign_sources(self, campaign_id: UUID, organization_id: UUID, source_ids: list[UUID]) -> None:
+    async def set_campaign_sources(
+        self, campaign_id: UUID, organization_id: UUID, source_ids: list[UUID]
+    ) -> None:
         cid = str(campaign_id)
         org = str(organization_id)
         await self._session.execute(
@@ -87,7 +98,9 @@ class SourceRepository:
             )
         await self._session.flush()
 
-    async def list_campaign_source_ids(self, campaign_id: UUID, organization_id: UUID) -> list[UUID]:
+    async def list_campaign_source_ids(
+        self, campaign_id: UUID, organization_id: UUID
+    ) -> list[UUID]:
         result = await self._session.execute(
             select(CampaignSourceRow.source_id).where(
                 CampaignSourceRow.campaign_id == str(campaign_id),

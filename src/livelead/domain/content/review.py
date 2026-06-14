@@ -4,9 +4,15 @@ from livelead.domain.content.models import ContentReviewStatus
 
 _ALLOWED: dict[ContentReviewStatus, frozenset[ContentReviewStatus]] = {
     ContentReviewStatus.DRAFT: frozenset({ContentReviewStatus.IN_REVIEW}),
-    ContentReviewStatus.IN_REVIEW: frozenset({ContentReviewStatus.APPROVED, ContentReviewStatus.REJECTED}),
-    ContentReviewStatus.REJECTED: frozenset({ContentReviewStatus.IN_REVIEW, ContentReviewStatus.DRAFT}),
-    ContentReviewStatus.APPROVED: frozenset({ContentReviewStatus.IN_REVIEW}),  # re-open for revision
+    ContentReviewStatus.IN_REVIEW: frozenset(
+        {ContentReviewStatus.APPROVED, ContentReviewStatus.REJECTED}
+    ),
+    ContentReviewStatus.REJECTED: frozenset(
+        {ContentReviewStatus.IN_REVIEW, ContentReviewStatus.DRAFT}
+    ),
+    ContentReviewStatus.APPROVED: frozenset(
+        {ContentReviewStatus.IN_REVIEW}
+    ),  # re-open for revision
 }
 
 

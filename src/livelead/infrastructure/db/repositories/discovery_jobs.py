@@ -35,7 +35,10 @@ class DiscoveryJobRepository:
         now = datetime.now(UTC)
         progress = {
             "percent": 0,
-            "sources": {sid: {"status": "pending", "items_found": 0, "pages_processed": 0} for sid in source_ids},
+            "sources": {
+                sid: {"status": "pending", "items_found": 0, "pages_processed": 0}
+                for sid in source_ids
+            },
             "events": [{"type": "job.queued", "at": now.isoformat()}],
         }
         row = DiscoveryJobRow(

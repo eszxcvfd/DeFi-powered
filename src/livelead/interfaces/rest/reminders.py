@@ -63,7 +63,9 @@ async def complete_reminder(
 ):
     svc = ReminderService(session)
     try:
-        updated = await svc.complete(reminder_id, tenant.organization_id, tenant.actor_role, body.note)
+        updated = await svc.complete(
+            reminder_id, tenant.organization_id, tenant.actor_role, body.note
+        )
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     lead = await svc.get_lead_for_reminder(updated.lead_id, tenant.organization_id)

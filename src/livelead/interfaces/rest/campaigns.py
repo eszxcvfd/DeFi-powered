@@ -48,7 +48,9 @@ def _summary_from_node(node) -> CampaignSummarySchema:
     )
 
 
-def _to_detail(campaign, *, parent_name: str | None = None, child_count: int = 0) -> CampaignDetailSchema:
+def _to_detail(
+    campaign, *, parent_name: str | None = None, child_count: int = 0
+) -> CampaignDetailSchema:
     return CampaignDetailSchema(
         id=campaign.id,
         organization_id=campaign.organization_id,

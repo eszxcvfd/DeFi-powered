@@ -47,7 +47,9 @@ def _to_view(row: DiscoveryJobRow) -> DiscoveryJobView:
     )
 
 
-@router.post("/campaigns/{campaign_id}/discovery-jobs", response_model=DiscoveryJobView, status_code=201)
+@router.post(
+    "/campaigns/{campaign_id}/discovery-jobs", response_model=DiscoveryJobView, status_code=201
+)
 async def create_discovery_job(
     campaign_id: UUID,
     tenant: TenantContext = Depends(get_tenant_context),
@@ -79,7 +81,9 @@ async def create_discovery_job(
             raise HTTPException(status_code=404, detail="source missing")
         d = evaluate_source_policy(row_to_source(row))
         if not d.runnable:
-            raise HTTPException(status_code=409, detail={"policy_denied": list(d.reasons), "source_id": str(sid)})
+            raise HTTPException(
+                status_code=409, detail={"policy_denied": list(d.reasons), "source_id": str(sid)}
+            )
 
     import json as _json
 

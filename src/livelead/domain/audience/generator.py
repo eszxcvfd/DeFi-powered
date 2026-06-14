@@ -112,9 +112,7 @@ def generate_audience_analysis(ctx: GenerationContext) -> AudienceAnalysisState:
     if snap.observation_count:
         observed_cues += 1
 
-    conf_base = confidence_from_observed_cues(
-        observed_cues=observed_cues, text_len=len(snap.text)
-    )
+    conf_base = confidence_from_observed_cues(observed_cues=observed_cues, text_len=len(snap.text))
 
     if title_has_format_signal(snap.text):
         topic = industry or "this topic"

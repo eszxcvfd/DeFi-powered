@@ -71,7 +71,9 @@ def run_discovery_job(job_id: str) -> None:
             session.refresh(row)
             if row.cancel_requested:
                 break
-            src_row = session.execute(select(SourceRow).where(SourceRow.id == sid)).scalar_one_or_none()
+            src_row = session.execute(
+                select(SourceRow).where(SourceRow.id == sid)
+            ).scalar_one_or_none()
             if not src_row:
                 continue
             domain = src_row.domain
@@ -126,13 +128,16 @@ def run_discovery_job(job_id: str) -> None:
             _save_progress(row, progress, session)
 
         session.refresh(row)
+
         def _to_status(raw: str) -> SourceRunStatus:
             try:
                 return SourceRunStatus(raw)
             except ValueError:
                 return SourceRunStatus.PENDING
 
-        source_statuses = [_to_status(sources_progress.get(sid, {}).get("status", "pending")) for sid in source_ids]
+        source_statuses = [
+            _to_status(sources_progress.get(sid, {}).get("status", "pending")) for sid in source_ids
+        ]
         final = aggregate_job_status(source_statuses, cancelled=bool(row.cancel_requested))
         row.status = final.value
         row.completed_at = datetime.now(UTC)
@@ -151,7 +156,9 @@ def run_discovery_job(job_id: str) -> None:
         if final != DiscoveryJobStatus.CANCELLED:
             domain_map: dict[str, str] = {}
             for sid in source_ids:
-                src_row = session.execute(select(SourceRow).where(SourceRow.id == sid)).scalar_one_or_none()
+                src_row = session.execute(
+                    select(SourceRow).where(SourceRow.id == sid)
+                ).scalar_one_or_none()
                 if src_row:
                     domain_map[sid] = src_row.domain
             from livelead.application.events.persist_discovery import (

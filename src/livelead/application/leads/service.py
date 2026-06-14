@@ -110,7 +110,9 @@ class LeadService:
             "has_linked_lead": len(linked) > 0,
         }
 
-    async def create_lead(self, organization_id: UUID, actor: str, data: CreateLeadInput) -> LeadRecord:
+    async def create_lead(
+        self, organization_id: UUID, actor: str, data: CreateLeadInput
+    ) -> LeadRecord:
         origin_err = validate_origin(
             origin_kind=data.origin_kind,
             event_id=str(data.event_id) if data.event_id else None,
@@ -267,7 +269,9 @@ class LeadService:
         if not fields and not activity_note:
             return lead
 
-        updated = await self._leads.save_fields(lead_id, organization_id, **fields) if fields else lead
+        updated = (
+            await self._leads.save_fields(lead_id, organization_id, **fields) if fields else lead
+        )
 
         if activity_note and activity_note.strip():
             await self._activity.append(
@@ -349,7 +353,9 @@ class LeadService:
                 raise ValueError("linked content requires lead event_id or linked_event_id")
             if content_validator is None:
                 raise ValueError("content validation required for linked content")
-            draft = await content_validator(linked_event_id, linked_content_draft_id, organization_id)
+            draft = await content_validator(
+                linked_event_id, linked_content_draft_id, organization_id
+            )
             if not draft:
                 raise ValueError("linked content not found")
             if draft.usage_status != ContentUsageStatus.USED:

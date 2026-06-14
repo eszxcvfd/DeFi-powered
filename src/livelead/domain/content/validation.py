@@ -12,8 +12,14 @@ def validate_settings(settings: ContentGenerationSettings) -> list[str]:
     if len(settings.cta) > 200:
         errors.append("cta too long")
     try:
-        ContentType(settings.content_type.value if hasattr(settings.content_type, "value") else settings.content_type)
-        ContentPlatform(settings.platform.value if hasattr(settings.platform, "value") else settings.platform)
+        ContentType(
+            settings.content_type.value
+            if hasattr(settings.content_type, "value")
+            else settings.content_type
+        )
+        ContentPlatform(
+            settings.platform.value if hasattr(settings.platform, "value") else settings.platform
+        )
     except ValueError:
         errors.append("invalid content_type or platform")
     return errors

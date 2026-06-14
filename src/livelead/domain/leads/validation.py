@@ -79,7 +79,9 @@ def find_duplicate(
     url = normalize_public_url(candidate.get("public_url", ""))
     ext = (candidate.get("external_id") or "").strip().lower()
     email_h = (candidate.get("email_hash") or "").strip().lower()
-    identity = normalize_identity_key(candidate.get("display_name", ""), candidate.get("company", ""))
+    identity = normalize_identity_key(
+        candidate.get("display_name", ""), candidate.get("company", "")
+    )
     cand_event = candidate.get("event_id")
 
     for lead in existing:

@@ -21,7 +21,9 @@ class ContentRepository:
         result = await self._session.execute(
             select(GeneratedContentDraftRow)
             .where(GeneratedContentDraftRow.event_id == str(event_id))
-            .order_by(GeneratedContentDraftRow.created_at.desc(), GeneratedContentDraftRow.variant_index)
+            .order_by(
+                GeneratedContentDraftRow.created_at.desc(), GeneratedContentDraftRow.variant_index
+            )
         )
         return [row_to_draft(r) for r in result.scalars().all()]
 

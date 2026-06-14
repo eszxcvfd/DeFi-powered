@@ -14,7 +14,9 @@ class ReminderRepository:
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
 
-    async def get_active_for_lead(self, lead_id: UUID, organization_id: UUID) -> FollowUpReminder | None:
+    async def get_active_for_lead(
+        self, lead_id: UUID, organization_id: UUID
+    ) -> FollowUpReminder | None:
         result = await self._session.execute(
             select(FollowUpReminderRow).where(
                 FollowUpReminderRow.lead_id == str(lead_id),
@@ -39,7 +41,9 @@ class ReminderRepository:
         row = result.scalars().first()
         return row_to_reminder(row) if row else None
 
-    async def list_open_for_org(self, organization_id: UUID, *, owner: str | None = None) -> list[FollowUpReminder]:
+    async def list_open_for_org(
+        self, organization_id: UUID, *, owner: str | None = None
+    ) -> list[FollowUpReminder]:
         result = await self._session.execute(
             select(FollowUpReminderRow).where(
                 FollowUpReminderRow.organization_id == str(organization_id),

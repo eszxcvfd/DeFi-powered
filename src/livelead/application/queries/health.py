@@ -5,7 +5,9 @@ from livelead.runtime.health import HealthStatus, RuntimeComponentStatus
 from livelead.runtime.settings import AppSettings
 
 
-async def get_health_status(settings: AppSettings, *, sqlite_ok: bool, redis_ok: bool) -> HealthStatus:
+async def get_health_status(
+    settings: AppSettings, *, sqlite_ok: bool, redis_ok: bool
+) -> HealthStatus:
     components = [
         RuntimeComponentStatus(
             name="sqlite",

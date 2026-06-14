@@ -50,12 +50,16 @@ class ContentService:
         self._engagement = EngagementService(session)
         self._provider = DeterministicContentProvider()
 
-    async def list_drafts(self, event_id: UUID, organization_id: UUID) -> list[GeneratedContentDraft] | None:
+    async def list_drafts(
+        self, event_id: UUID, organization_id: UUID
+    ) -> list[GeneratedContentDraft] | None:
         if not await self._events.get(event_id, organization_id):
             return None
         return await self._content.list_for_event(event_id)
 
-    async def preview_context(self, event_id: UUID, organization_id: UUID) -> ContentContextPreview | None:
+    async def preview_context(
+        self, event_id: UUID, organization_id: UUID
+    ) -> ContentContextPreview | None:
         event = await self._events.get(event_id, organization_id)
         if not event:
             return None
@@ -156,10 +160,14 @@ class ContentService:
             risk_flags_json=draft_to_flags_json(temp),
         )
         if updated:
-            logger.info("content_draft_edited event_id=%s draft_id=%s editor=%s", event_id, draft_id, editor)
+            logger.info(
+                "content_draft_edited event_id=%s draft_id=%s editor=%s", event_id, draft_id, editor
+            )
         return updated
 
-    async def get_draft_for_org(self, draft_id: UUID, event_id: UUID, organization_id: UUID) -> GeneratedContentDraft | None:
+    async def get_draft_for_org(
+        self, draft_id: UUID, event_id: UUID, organization_id: UUID
+    ) -> GeneratedContentDraft | None:
         if not await self._events.get(event_id, organization_id):
             return None
         return await self._content.get_draft(draft_id, event_id)
@@ -227,7 +235,9 @@ class ContentService:
             export_format=normalized,
             body_revision=draft.body_revision,
         )
-        logger.info("content_handoff_export draft_id=%s format=%s actor=%s", draft_id, normalized, actor)
+        logger.info(
+            "content_handoff_export draft_id=%s format=%s actor=%s", draft_id, normalized, actor
+        )
         return media_type, filename, body
 
     async def mark_used(
@@ -272,7 +282,9 @@ class ContentService:
         new = ContentReviewStatus.IN_REVIEW
         if not can_transition(draft.review_status, new):
             raise ValueError("invalid review transition")
-        await self._review.set_review_status(draft_id, event_id, new, reviewer_assignee=assignee or actor)
+        await self._review.set_review_status(
+            draft_id, event_id, new, reviewer_assignee=assignee or actor
+        )
         await self._review.append_decision(
             draft_id=draft_id,
             event_id=event_id,
@@ -315,7 +327,9 @@ class ContentService:
             note=note,
             body_revision=draft.body_revision,
         )
-        logger.info("content_approved draft_id=%s actor=%s rev=%s", draft_id, actor, draft.body_revision)
+        logger.info(
+            "content_approved draft_id=%s actor=%s rev=%s", draft_id, actor, draft.body_revision
+        )
         return await self._content.get_draft(draft_id, event_id)
 
     async def reject_draft(

@@ -86,7 +86,9 @@ class ReminderService:
             from_due_date=existing.due_date.isoformat() if existing else "",
             to_due_date=follow_up_date.isoformat(),
         )
-        logger.info("reminder_sync lead_id=%s reminder_id=%s state=%s", lead_id, rem.id, rem.state.value)
+        logger.info(
+            "reminder_sync lead_id=%s reminder_id=%s state=%s", lead_id, rem.id, rem.state.value
+        )
         return rem
 
     async def summary_for_lead(
@@ -149,7 +151,9 @@ class ReminderService:
             )
         return sorted(out, key=lambda i: i.reminder.due_date)
 
-    async def list_in_app_alerts(self, organization_id: UUID, *, today: date | None = None) -> list[dict]:
+    async def list_in_app_alerts(
+        self, organization_id: UUID, *, today: date | None = None
+    ) -> list[dict]:
         queue = await self.list_due_queue(organization_id, today=today)
         return [
             {
@@ -157,13 +161,17 @@ class ReminderService:
                 "lead_id": str(item.reminder.lead_id),
                 "lead_display_name": item.lead_display_name,
                 "due_date": item.reminder.due_date.isoformat(),
-                "state": classify_reminder_state(item.reminder.due_date, today=today or date.today()).value,
+                "state": classify_reminder_state(
+                    item.reminder.due_date, today=today or date.today()
+                ).value,
                 "owner": item.reminder.owner,
             }
             for item in queue
         ]
 
-    async def complete(self, reminder_id: UUID, organization_id: UUID, actor: str, note: str = "") -> FollowUpReminder:
+    async def complete(
+        self, reminder_id: UUID, organization_id: UUID, actor: str, note: str = ""
+    ) -> FollowUpReminder:
         rem = await self._reminders.get(reminder_id, organization_id)
         if not rem:
             raise ValueError("reminder not found")
@@ -182,7 +190,9 @@ class ReminderService:
             from_due_date=rem.due_date.isoformat(),
             to_due_date="",
         )
-        logger.info("reminder_complete reminder_id=%s lead_id=%s actor=%s", reminder_id, rem.lead_id, actor)
+        logger.info(
+            "reminder_complete reminder_id=%s lead_id=%s actor=%s", reminder_id, rem.lead_id, actor
+        )
         return updated
 
     async def get_lead_for_reminder(self, lead_id: UUID, organization_id: UUID):
@@ -210,7 +220,9 @@ class ReminderService:
             actor=actor,
         )
         assert updated
-        await self._leads.save_fields(rem.lead_id, organization_id, follow_up_date=new_due_date.isoformat())
+        await self._leads.save_fields(
+            rem.lead_id, organization_id, follow_up_date=new_due_date.isoformat()
+        )
         await self._history.append(
             reminder_id=reminder_id,
             lead_id=rem.lead_id,
