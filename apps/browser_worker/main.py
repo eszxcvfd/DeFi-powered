@@ -14,7 +14,9 @@ def main() -> int:
     settings = parse_settings()
     mode = settings.browser_automation_mode
     if mode == "stub":
-        logger.warning("browser_worker LIVELEAD_BROWSER_AUTOMATION=stub — no real Chromium sessions")
+        logger.warning(
+            "browser_worker LIVELEAD_BROWSER_AUTOMATION=stub — no real Chromium sessions"
+        )
     elif mode != "playwright":
         logger.info("browser_worker automation_mode=%s (maps to Playwright runtime)", mode)
     else:
