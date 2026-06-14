@@ -7,6 +7,7 @@ cd "$ROOT"
 export PYTHONPATH="${PYTHONPATH:-}:src"
 export LIVELEAD_SQLITE_PATH="${LIVELEAD_SQLITE_PATH:-$ROOT/data/livelead.sqlite3}"
 export LIVELEAD_BROWSER_AUTOMATION_MODE="${LIVELEAD_BROWSER_AUTOMATION_MODE:-playwright}"
+export LIVELEAD_DISCOVERY_USE_MOCK_CONNECTORS=true
 if [ -f "$ROOT/frontend/.playwright-browser.env" ]; then
   # shellcheck source=/dev/null
   source "$ROOT/frontend/.playwright-browser.env"
@@ -47,6 +48,10 @@ cleanup() {
 trap cleanup EXIT INT TERM
 
 ./scripts/migrate-db.sh
+
+if [ -x "$PY" ] || command -v "$PY" >/dev/null 2>&1; then
+  "$PY" scripts/clean-e2e.py >&2 || true
+fi
 
 free_port "$API_PORT"
 
