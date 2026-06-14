@@ -43,3 +43,23 @@ export async function rescoreEvent(eventId: string): Promise<EventDetail> {
   if (!r.ok) throw new Error("rescore failed");
   return r.json();
 }
+
+export async function createEngagementPlan(eventId: string): Promise<EventDetail> {
+  const r = await fetch(`/events/${eventId}/engagement-plans`, { method: "POST" });
+  if (!r.ok) throw new Error("engagement plan failed");
+  return r.json();
+}
+
+export async function patchEngagementTask(
+  eventId: string,
+  taskId: string,
+  body: { status?: string; assignee?: string; notes?: string },
+): Promise<EventDetail> {
+  const r = await fetch(`/events/${eventId}/engagement-tasks/${taskId}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!r.ok) throw new Error("task update failed");
+  return r.json();
+}

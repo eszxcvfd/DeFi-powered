@@ -5,7 +5,9 @@ import CampaignList from "./pages/CampaignList";
 import CampaignWizard from "./pages/CampaignWizard";
 import AdminConnectors from "./pages/AdminConnectors";
 import CampaignEvents from "./pages/CampaignEvents";
+import EventContentStudioPage from "./pages/EventContentStudioPage";
 import EventDetailPage from "./pages/EventDetailPage";
+import LeadsPipelinePage from "./pages/LeadsPipelinePage";
 
 function Placeholder({ title }: { title: string }) {
   return (
@@ -26,8 +28,9 @@ export default function App() {
         <Route path="campaigns/:id" element={<CampaignDetail />} />
         <Route path="campaigns/:id/events" element={<CampaignEvents />} />
         <Route path="events/:id" element={<EventDetailPage />} />
+        <Route path="events/:id/content" element={<EventContentStudioPage />} />
         <Route path="events" element={<Placeholder title="Events" />} />
-        <Route path="leads" element={<Placeholder title="Leads" />} />
+        <Route path="leads" element={<LeadsPipelinePage />} />
         <Route path="browser" element={<Placeholder title="Browser session" />} />
         <Route path="admin" element={<AdminConnectors />} />
         <Route path="admin/connectors" element={<AdminConnectors />} />

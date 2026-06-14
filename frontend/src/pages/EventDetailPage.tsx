@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { getEvent, refreshAudience, rescoreEvent } from "@/api/events";
+import { createEngagementPlan, getEvent, patchEngagementTask, refreshAudience, rescoreEvent } from "@/api/events";
+import { createLead } from "@/api/leads";
 import { Button } from "@/components/ui/button";
 import { PRIORITY_LABELS } from "@/constants/priority";
 import { SCORING_LABELS } from "@/constants/scoring";
@@ -13,6 +14,10 @@ export default function EventDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [rescoring, setRescoring] = useState(false);
   const [audienceLoading, setAudienceLoading] = useState(false);
+  const [engagementLoading, setEngagementLoading] = useState(false);
+  const [taskUpdating, setTaskUpdating] = useState<string | null>(null);
+  const [leadCreating, setLeadCreating] = useState(false);
+  const [leadMessage, setLeadMessage] = useState<string | null>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -142,6 +147,108 @@ export default function EventDetailPage() {
         )}
       </section>
 
+      <section className="mt-6 border border-slate-200 p-5 rounded-sm bg-white" data-testid="event-engagement-panel">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-sm font-bold uppercase tracking-wider text-slate-700">Engagement plan (US-008)</h2>
+          <Button
+            type="button"
+            size="sm"
+            variant="ghost"
+            data-testid="engagement-create"
+            disabled={engagementLoading || event.score_state === "missing"}
+            onClick={async () => {
+              if (!id) return;
+              setEngagementLoading(true);
+              try {
+                setEvent(await createEngagementPlan(id));
+              } catch (e) {
+                setError(String(e));
+              } finally {
+                setEngagementLoading(false);
+              }
+            }}
+          >
+            {engagementLoading ? <Loader2 className="size-3.5 animate-spin" /> : "Create / refresh plan"}
+          </Button>
+        </div>
+        {event.score_state === "missing" ? (
+          <p className="text-sm text-amber-700">Score the event before generating an engagement plan.</p>
+        ) : event.engagement.state === "missing" ? (
+          <p className="text-sm text-slate-500" data-testid="engagement-empty">
+            {event.engagement.generation_notes[0] ?? "No plan yet. Create one to see phased tasks."}
+          </p>
+        ) : (
+          <div className="space-y-6">
+            {(["PRE_EVENT", "LIVE_EVENT", "POST_EVENT"] as const).map((phase) => {
+              const tasks = event.engagement.tasks.filter((t) => t.phase === phase);
+              if (tasks.length === 0) return null;
+              const label =
+                phase === "PRE_EVENT" ? "Before event" : phase === "LIVE_EVENT" ? "During event" : "After event";
+              return (
+                <div key={phase} data-testid={`engagement-phase-${phase}`}>
+                  <h3 className="text-xs font-semibold uppercase text-slate-500 mb-2">{label}</h3>
+                  <ul className="space-y-3">
+                    {tasks.map((t) => (
+                      <li key={t.id} className="border border-slate-100 p-3 rounded-sm text-sm" data-testid="engagement-task">
+                        <div className="flex justify-between gap-2">
+                          <span className="font-medium">{t.title}</span>
+                          <select
+                            className="text-xs border border-slate-200 rounded px-1 py-0.5"
+                            data-testid="engagement-task-status"
+                            value={t.status}
+                            disabled={taskUpdating === t.id}
+                            onChange={async (ev) => {
+                              if (!id) return;
+                              setTaskUpdating(t.id);
+                              try {
+                                setEvent(await patchEngagementTask(id, t.id, { status: ev.target.value }));
+                              } catch (e) {
+                                setError(String(e));
+                              } finally {
+                                setTaskUpdating(null);
+                              }
+                            }}
+                          >
+                            <option value="TODO">Todo</option>
+                            <option value="IN_PROGRESS">In progress</option>
+                            <option value="DONE">Done</option>
+                            <option value="SKIPPED">Skipped</option>
+                          </select>
+                        </div>
+                        <p className="text-slate-600 mt-1 text-xs">{t.rationale}</p>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </section>
+
+      <section className="mt-6 border border-slate-200 p-5 rounded-sm bg-white" data-testid="event-content-summary">
+        <div className="flex items-center justify-between mb-2">
+          <h2 className="text-sm font-bold uppercase tracking-wider text-slate-700">Generated drafts (US-009)</h2>
+          {id && (
+            <Link to={`/events/${id}/content`} className="text-xs font-medium text-slate-700 underline" data-testid="open-content-studio">
+              Open content studio
+            </Link>
+          )}
+        </div>
+        {event.generated_content?.length ? (
+          <ul className="text-sm text-slate-600 space-y-1">
+            {event.generated_content.map((g) => (
+              <li key={g.id}>
+                Variant {g.variant_index + 1} ({g.platform}) — {g.review_status}
+                {g.ready_for_use ? " ✓ ready" : ""} — {g.risk_flag_count} flag(s)
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-sm text-slate-500">No drafts yet.</p>
+        )}
+      </section>
+
       <section className="mt-6 border border-slate-200 p-5 rounded-sm bg-white" data-testid="event-score-panel">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-sm font-bold uppercase tracking-wider text-slate-700">Score (US-006)</h2>
@@ -185,6 +292,60 @@ export default function EventDetailPage() {
             </ul>
           </div>
         )}
+      </section>
+
+      <section className="mt-6 border border-slate-200 p-5 rounded-sm bg-white" data-testid="event-leads-panel">
+        <h2 className="text-sm font-bold uppercase tracking-wider text-slate-700 mb-4">Leads</h2>
+        {event.leads?.has_linked_lead ? (
+          <p className="text-sm text-slate-600">
+            {event.leads.linked_count} linked lead(s).{" "}
+            <Link to="/leads" className="underline">
+              Open pipeline
+            </Link>
+          </p>
+        ) : (
+          <>
+            <p className="text-sm text-slate-600 mb-3">No lead linked to this event yet.</p>
+            <Button
+              type="button"
+              size="sm"
+              data-testid="event-create-lead"
+              disabled={leadCreating}
+              onClick={async () => {
+                if (!event) return;
+                setLeadCreating(true);
+                setLeadMessage(null);
+                try {
+                  const organizer = (event.organizer || "").trim();
+                  const title = event.canonical_title.slice(0, 80);
+                  await createLead({
+                    display_name: organizer || title,
+                    company: organizer && organizer !== title ? organizer : "",
+                    title: "",
+                    discovery_source: "event",
+                    event_id: event.id,
+                    campaign_id: event.campaign_id,
+                    public_url: `${event.source_url}#event-${event.id}`,
+                    origin_kind: "event",
+                  });
+                  setEvent(await getEvent(event.id));
+                  setLeadMessage("Lead created. View it in the pipeline.");
+                } catch (e) {
+                  const msg = String(e);
+                  setLeadMessage(msg);
+                  if (msg.includes("duplicate")) {
+                    setEvent(await getEvent(event.id));
+                  }
+                } finally {
+                  setLeadCreating(false);
+                }
+              }}
+            >
+              {leadCreating ? "Creating…" : "Create lead from event"}
+            </Button>
+          </>
+        )}
+        {leadMessage && <p className="text-xs mt-2 text-slate-600">{leadMessage}</p>}
       </section>
     </div>
   );

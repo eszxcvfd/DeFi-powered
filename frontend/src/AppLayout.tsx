@@ -1,5 +1,7 @@
+import { useEffect, useState } from "react";
 import { LayoutDashboard, Radio, FileText, Kanban, Monitor, Settings, Sparkles } from "lucide-react";
-import { NavLink, Outlet } from "react-router-dom";
+import { Link, NavLink, Outlet } from "react-router-dom";
+import { listReminderAlerts } from "@/api/reminders";
 import { Button } from "@/components/ui/button";
 
 const nav = [
@@ -12,6 +14,12 @@ const nav = [
 ];
 
 export default function AppLayout() {
+  const [alerts, setAlerts] = useState<{ lead_display_name: string; state: string }[]>([]);
+  useEffect(() => {
+    listReminderAlerts()
+      .then(setAlerts)
+      .catch(() => setAlerts([]));
+  }, []);
   return (
     <div className="min-h-screen flex bg-[var(--color-background)]">
       <aside className="w-60 border-r border-[var(--color-border)] bg-[var(--color-card)] p-5 flex flex-col gap-1.5">
@@ -55,6 +63,17 @@ export default function AppLayout() {
       </aside>
       
       <main className="flex-1 overflow-y-auto">
+        {alerts.length > 0 && (
+          <div
+            className="mx-6 mt-4 border border-amber-200 bg-amber-50 text-amber-900 text-sm px-4 py-3 rounded-sm"
+            data-testid="reminder-in-app-banner"
+          >
+            {alerts.length} follow-up reminder(s) due or overdue.{" "}
+            <Link to="/leads" className="underline font-medium">
+              Review in pipeline
+            </Link>
+          </div>
+        )}
         <Outlet />
       </main>
     </div>
