@@ -81,10 +81,14 @@ async def create_discovery_job(
         if not d.runnable:
             raise HTTPException(status_code=409, detail={"policy_denied": list(d.reasons), "source_id": str(sid)})
 
+    import json as _json
+
     criteria = {
         "campaign_id": str(campaign_id),
         "campaign_name": camp_row.name,
         "source_ids": [str(s) for s in source_ids],
+        "positive_keywords": _json.loads(camp_row.positive_keywords_json or "[]"),
+        "exclude_keywords": _json.loads(camp_row.exclude_keywords_json or "[]"),
     }
     repo = DiscoveryJobRepository(session)
     job_row = await repo.create(

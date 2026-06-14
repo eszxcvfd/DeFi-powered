@@ -5,7 +5,7 @@ from datetime import datetime
 from enum import StrEnum
 from uuid import UUID
 
-AUDIENCE_STRATEGY_VERSION = "us-007-v1"
+AUDIENCE_STRATEGY_VERSION = "us-007-v2-evidence"
 
 
 class FitType(StrEnum):

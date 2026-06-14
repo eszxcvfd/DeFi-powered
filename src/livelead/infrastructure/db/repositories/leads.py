@@ -100,8 +100,12 @@ class LeadActivityRepository:
         body: str = "",
         from_stage: str = "",
         to_stage: str = "",
+        outcome_type: str = "",
+        occurred_at: datetime | None = None,
+        linked_content_draft_id: str = "",
+        created_at: datetime | None = None,
     ) -> LeadActivityEntry:
-        now = datetime.now(UTC)
+        now = created_at or datetime.now(UTC)
         row = LeadActivityRow(
             id=str(uuid4()),
             lead_id=str(lead_id),
@@ -110,6 +114,9 @@ class LeadActivityRepository:
             body=body,
             from_stage=from_stage,
             to_stage=to_stage,
+            outcome_type=outcome_type,
+            occurred_at=occurred_at,
+            linked_content_draft_id=linked_content_draft_id,
             created_at=now,
         )
         self._session.add(row)

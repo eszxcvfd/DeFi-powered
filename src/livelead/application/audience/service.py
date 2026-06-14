@@ -26,11 +26,13 @@ class AudienceService:
 
         current = await self._audience.list_current(event_id)
         if current and not refresh:
-            return AudienceAnalysisState(
-                state="ready",
-                hypotheses=tuple(current),
-                strategy_version=current[0].model_version if current else AUDIENCE_STRATEGY_VERSION,
-            )
+            stale = any(h.model_version != AUDIENCE_STRATEGY_VERSION for h in current)
+            if not stale:
+                return AudienceAnalysisState(
+                    state="ready",
+                    hypotheses=tuple(current),
+                    strategy_version=current[0].model_version if current else AUDIENCE_STRATEGY_VERSION,
+                )
 
         campaign = await self._campaigns.get(event.campaign_id, organization_id)
         if not campaign:

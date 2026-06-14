@@ -10,12 +10,18 @@ def _default_sqlite_path() -> Path:
     return Path("data/livelead.sqlite3")
 
 
+def _resolved_env_file() -> Path | None:
+    from livelead.runtime.env_bootstrap import repo_root
+
+    path = repo_root() / ".env"
+    return path if path.is_file() else None
+
+
 class AppSettings(BaseSettings):
     """Typed bootstrap for local and single-host MVP."""
 
     model_config = SettingsConfigDict(
         env_prefix="LIVELEAD_",
-        env_file=".env",
         env_file_encoding="utf-8",
         extra="ignore",
     )
@@ -29,6 +35,28 @@ class AppSettings(BaseSettings):
         default="dev-only-change-in-production-livelead",
         description="Fernet key material for connector secrets at rest",
     )
+    browser_automation_mode: str = Field(
+        default="playwright",
+        description="playwright | cloakbrowser (same runtime, different binary) | stub (tests only)",
+    )
+    browser_headless: bool = Field(default=True)
+    browser_navigation_timeout_ms: int = Field(default=45_000)
+    playwright_chromium_executable: str | None = Field(
+        default=None,
+        description="Optional Chrome/Chromium path (e.g. from scripts/playwright-install.sh)",
+    )
+    cloakbrowser_executable: str | None = Field(
+        default=None,
+        description="Optional CloakBrowser/Chromium binary for cloakbrowser engine connectors",
+    )
+    browser_profile_root: Path = Field(
+        default_factory=lambda: Path("data/browser_profiles"),
+        description="Per-session isolated profile storage root",
+    )
+    discovery_use_mock_connectors: bool = Field(
+        default=False,
+        description="If true, discovery uses deterministic mock sources (tests only)",
+    )
 
     @property
     def database_url(self) -> str:
@@ -37,4 +65,10 @@ class AppSettings(BaseSettings):
 
 
 def parse_settings() -> AppSettings:
+    from livelead.runtime.env_bootstrap import ensure_env_loaded
+
+    ensure_env_loaded()
+    env_file = _resolved_env_file()
+    if env_file is not None:
+        return AppSettings(_env_file=env_file)  # type: ignore[call-arg]
     return AppSettings()

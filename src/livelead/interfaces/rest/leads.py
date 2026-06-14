@@ -4,18 +4,22 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from livelead.application.content.service import ContentService
 from livelead.application.leads.service import CreateLeadInput, LeadService
 from livelead.application.reminders.service import ReminderService
 from livelead.domain.leads.models import LeadOriginKind, LeadStage
+from livelead.domain.leads.outcomes import parse_outcome_type
 from livelead.interfaces.auth.tenant_context import TenantContext, get_tenant_context
 from livelead.interfaces.rest.deps import get_db_session
 from livelead.interfaces.rest.leads_schemas import (
+    LatestLeadOutcomeSchema,
     LeadActivitySchema,
     LeadCreateSchema,
     LeadDetailSchema,
     LeadPatchSchema,
     LeadReminderSummarySchema,
     LeadSummarySchema,
+    RecordLeadOutcomeSchema,
 )
 
 router = APIRouter(tags=["leads"])
@@ -28,7 +32,28 @@ async def _reminder_schema(session: AsyncSession, org_id: UUID, lead) -> LeadRem
     return LeadReminderSummarySchema(**summary)
 
 
-def _summary(lead, reminder: LeadReminderSummarySchema) -> LeadSummarySchema:
+def _latest_outcome_schema(svc: LeadService, history: list) -> LatestLeadOutcomeSchema | None:
+    latest = svc.latest_outcome_from_history(history)
+    if not latest:
+        return None
+    return LatestLeadOutcomeSchema(
+        outcome_type=latest.outcome_type.value,
+        occurred_at=latest.occurred_at,
+        actor=latest.actor,
+        activity_id=latest.activity_id,
+        linked_content_draft_id=latest.linked_content_draft_id,
+        notes=latest.notes,
+    )
+
+
+def _summary(
+    lead,
+    reminder: LeadReminderSummarySchema,
+    *,
+    event_title: str = "",
+    region: str = "",
+    latest_outcome: LatestLeadOutcomeSchema | None = None,
+) -> LeadSummarySchema:
     return LeadSummarySchema(
         id=lead.id,
         display_name=lead.display_name,
@@ -42,11 +67,28 @@ def _summary(lead, reminder: LeadReminderSummarySchema) -> LeadSummarySchema:
         follow_up_date=lead.follow_up_date,
         updated_at=lead.updated_at,
         reminder=reminder,
+        event_title=event_title,
+        region=region,
+        latest_outcome=latest_outcome,
     )
 
 
-def _detail(lead, history: list, reminder: LeadReminderSummarySchema) -> LeadDetailSchema:
-    base = _summary(lead, reminder)
+def _detail(
+    lead,
+    history: list,
+    reminder: LeadReminderSummarySchema,
+    svc: LeadService,
+    *,
+    event_title: str = "",
+    region: str = "",
+) -> LeadDetailSchema:
+    base = _summary(
+        lead,
+        reminder,
+        event_title=event_title,
+        region=region,
+        latest_outcome=_latest_outcome_schema(svc, history),
+    )
     return LeadDetailSchema(
         **base.model_dump(),
         public_url=lead.public_url,
@@ -67,9 +109,32 @@ def _detail(lead, history: list, reminder: LeadReminderSummarySchema) -> LeadDet
                 from_stage=h.from_stage,
                 to_stage=h.to_stage,
                 created_at=h.created_at,
+                outcome_type=h.outcome_type,
+                occurred_at=h.occurred_at,
+                linked_content_draft_id=h.linked_content_draft_id or None,
             )
             for h in history
         ],
+    )
+
+
+async def _lead_detail_response(
+    svc: LeadService,
+    session: AsyncSession,
+    org_id: UUID,
+    lead,
+    history: list,
+) -> LeadDetailSchema:
+    reminder = await _reminder_schema(session, org_id, lead)
+    ctx = await svc.event_context_for_leads(org_id, [lead])
+    ec = ctx.get(lead.id, {})
+    return _detail(
+        lead,
+        history,
+        reminder,
+        svc,
+        event_title=ec.get("event_title", ""),
+        region=ec.get("region", ""),
     )
 
 
@@ -91,12 +156,23 @@ async def list_leads(
         discovery_source=discovery_source,
         due_before=due_before,
     )
+    ctx = await svc.event_context_for_leads(tenant.organization_id, leads)
     out = []
     for lead in leads:
         summary = await rem_svc.summary_for_lead(
             tenant.organization_id, lead.id, follow_up_date=lead.follow_up_date
         )
-        out.append(_summary(lead, LeadReminderSummarySchema(**summary)))
+        ec = ctx.get(lead.id, {})
+        history = await svc.list_activity(lead.id)
+        out.append(
+            _summary(
+                lead,
+                LeadReminderSummarySchema(**summary),
+                event_title=ec.get("event_title", ""),
+                region=ec.get("region", ""),
+                latest_outcome=_latest_outcome_schema(svc, history),
+            )
+        )
     await session.commit()
     return out
 
@@ -141,9 +217,9 @@ async def create_lead(
         code = 409 if msg.startswith("duplicate") else 400
         raise HTTPException(status_code=code, detail=msg) from exc
     history = await svc.list_activity(lead.id)
-    reminder = await _reminder_schema(session, tenant.organization_id, lead)
+    out = await _lead_detail_response(svc, session, tenant.organization_id, lead, history)
     await session.commit()
-    return _detail(lead, history, reminder)
+    return out
 
 
 @router.get("/leads/{lead_id}", response_model=LeadDetailSchema)
@@ -157,9 +233,9 @@ async def get_lead(
     if not detail:
         raise HTTPException(status_code=404, detail="lead not found")
     lead, history = detail
-    reminder = await _reminder_schema(session, tenant.organization_id, lead)
+    out = await _lead_detail_response(svc, session, tenant.organization_id, lead, history)
     await session.commit()
-    return _detail(lead, history, reminder)
+    return out
 
 
 @router.patch("/leads/{lead_id}", response_model=LeadDetailSchema)
@@ -194,6 +270,44 @@ async def patch_lead(
     if not lead:
         raise HTTPException(status_code=404, detail="lead not found")
     history = await svc.list_activity(lead_id)
-    reminder = await _reminder_schema(session, tenant.organization_id, lead)
+    out = await _lead_detail_response(svc, session, tenant.organization_id, lead, history)
     await session.commit()
-    return _detail(lead, history, reminder)
+    return out
+
+
+@router.post("/leads/{lead_id}/outcomes", response_model=LeadDetailSchema)
+async def record_lead_outcome(
+    lead_id: UUID,
+    body: RecordLeadOutcomeSchema,
+    tenant: TenantContext = Depends(get_tenant_context),
+    session: AsyncSession = Depends(get_db_session),
+):
+    otype = parse_outcome_type(body.outcome_type)
+    if not otype:
+        raise HTTPException(status_code=400, detail="invalid outcome_type")
+    svc = LeadService(session)
+    content_svc = ContentService(session)
+
+    async def validate_content(eid: UUID, draft_id: UUID, org_id: UUID):
+        return await content_svc.get_draft_for_org(draft_id, eid, org_id)
+
+    try:
+        lead = await svc.record_outcome(
+            lead_id,
+            tenant.organization_id,
+            tenant.actor_role,
+            outcome_type=otype,
+            occurred_at=body.occurred_at,
+            notes=body.notes,
+            linked_content_draft_id=body.linked_content_draft_id,
+            linked_event_id=body.linked_event_id,
+            content_validator=validate_content,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    if not lead:
+        raise HTTPException(status_code=404, detail="lead not found")
+    history = await svc.list_activity(lead_id)
+    out = await _lead_detail_response(svc, session, tenant.organization_id, lead, history)
+    await session.commit()
+    return out

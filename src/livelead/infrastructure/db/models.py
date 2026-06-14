@@ -304,6 +304,9 @@ class LeadActivityRow(Base):
     body: Mapped[str] = mapped_column(Text, default="")
     from_stage: Mapped[str] = mapped_column(String(32), default="")
     to_stage: Mapped[str] = mapped_column(String(32), default="")
+    outcome_type: Mapped[str] = mapped_column(String(32), default="")
+    occurred_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    linked_content_draft_id: Mapped[str] = mapped_column(String(36), default="")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 
@@ -321,3 +324,30 @@ class EventScoreRow(Base):
     components_json: Mapped[str] = mapped_column(Text, default="[]")
     explanation_json: Mapped[str] = mapped_column(Text, default="{}")
     superseded_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class BrowserSessionRow(Base):
+    __tablename__ = "browser_sessions"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    organization_id: Mapped[str] = mapped_column(String(36), index=True, nullable=False)
+    actor: Mapped[str] = mapped_column(String(128), nullable=False)
+    launch_kind: Mapped[str] = mapped_column(String(16), nullable=False)
+    event_id: Mapped[str | None] = mapped_column(String(36), index=True, nullable=True)
+    source_id: Mapped[str] = mapped_column(String(36), index=True, nullable=False)
+    initial_url: Mapped[str] = mapped_column(String(1024), nullable=False)
+    source_name: Mapped[str] = mapped_column(String(200), default="")
+    source_domain: Mapped[str] = mapped_column(String(255), default="")
+    engine: Mapped[str] = mapped_column(String(32), nullable=False)
+    status: Mapped[str] = mapped_column(String(32), nullable=False, index=True)
+    isolation_key: Mapped[str] = mapped_column(String(128), nullable=False)
+    profile_boundary: Mapped[str] = mapped_column(String(256), nullable=False)
+    current_url: Mapped[str] = mapped_column(String(1024), default="")
+    latest_action_summary: Mapped[str] = mapped_column(Text, default="")
+    policy_reasons_json: Mapped[str] = mapped_column(Text, default="[]")
+    stop_requested: Mapped[bool] = mapped_column(Boolean, default=False)
+    error_summary: Mapped[str | None] = mapped_column(Text, nullable=True)
+    worker_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    ended_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

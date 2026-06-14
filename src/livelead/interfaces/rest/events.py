@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from livelead.application.audience.service import AudienceService
+from livelead.application.browser.service import BrowserSessionService
 from livelead.application.content.service import ContentService
 from livelead.application.engagement.service import EngagementService
 from livelead.application.leads.service import LeadService
@@ -147,6 +148,59 @@ def _provenance_schema(row, obs_count: int, source_ids: list[UUID]) -> EventProv
     )
 
 
+@router.get("/events", response_model=list[EventListItemSchema])
+async def list_organization_events(
+    q: str | None = Query(default=None, max_length=200),
+    limit: int = Query(default=100, ge=1, le=500),
+    include_score: bool = Query(default=False),
+    tenant: TenantContext = Depends(get_tenant_context),
+    session: AsyncSession = Depends(get_db_session),
+):
+    events = EventRepository(session)
+    rows = await events.list_for_organization(
+        tenant.organization_id,
+        q=q,
+        limit=limit,
+    )
+    counts = await events.observation_counts([e.id for e in rows])
+    campaigns = CampaignRepository(session)
+    name_by_id = {c.id: c.name for c in await campaigns.list_for_organization(tenant.organization_id)}
+    score_map: dict[UUID, object] = {}
+    if include_score and rows:
+        scores = EventScoreRepository(session)
+        by_campaign: dict[UUID, list[UUID]] = {}
+        for e in rows:
+            by_campaign.setdefault(e.campaign_id, []).append(e.id)
+        for cid, eids in by_campaign.items():
+            score_map.update(await scores.get_current_for_events(eids, cid))
+    source_counts: dict[UUID, int] = {}
+    for e in rows:
+        src_ids = await events.distinct_source_ids(e.id)
+        source_counts[e.id] = len(src_ids) or 1
+    await session.commit()
+    out: list[EventListItemSchema] = []
+    for e in rows:
+        obs_n = counts.get(e.id, 1)
+        out.append(
+            EventListItemSchema(
+                id=e.id,
+                campaign_id=e.campaign_id,
+                campaign_name=name_by_id.get(e.campaign_id, ""),
+                canonical_title=e.canonical_title,
+                source_url=e.source_url,
+                observed_at=e.observed_at,
+                region=e.region,
+                confidence_summary=e.confidence_summary,
+                observation_count=obs_n,
+                source_count=source_counts.get(e.id, 1),
+                discovery_job_id=UUID(e.discovery_job_id) if e.discovery_job_id else None,
+                score=_score_summary(score_map.get(e.id)) if include_score else None,
+                deferred={"scoring": "available" if include_score else "omitted"},
+            )
+        )
+    return out
+
+
 @router.get("/campaigns/{campaign_id}/events", response_model=list[EventListItemSchema])
 async def list_campaign_events(
     campaign_id: UUID,
@@ -158,8 +212,10 @@ async def list_campaign_events(
     session: AsyncSession = Depends(get_db_session),
 ):
     campaigns = CampaignRepository(session)
-    if not await campaigns.get(campaign_id, tenant.organization_id):
+    camp = await campaigns.get(campaign_id, tenant.organization_id)
+    if not camp:
         raise HTTPException(status_code=404, detail="campaign not found")
+    campaign_name = camp.name
     events = EventRepository(session)
     rows = await events.list_for_campaign(
         campaign_id,
@@ -184,6 +240,7 @@ async def list_campaign_events(
         item = EventListItemSchema(
             id=e.id,
             campaign_id=e.campaign_id,
+            campaign_name=campaign_name,
             canonical_title=e.canonical_title,
             source_url=e.source_url,
             observed_at=e.observed_at,
@@ -197,6 +254,33 @@ async def list_campaign_events(
         )
         out.append(item)
     return out
+
+
+@router.get("/events/{event_id}/browser-launch-sources")
+async def list_event_browser_launch_sources(
+    event_id: UUID,
+    tenant: TenantContext = Depends(get_tenant_context),
+    session: AsyncSession = Depends(get_db_session),
+):
+    svc = BrowserSessionService(session)
+    try:
+        options = await svc.list_launch_sources_for_event(
+            tenant.organization_id, event_id, actor=tenant.actor_role
+        )
+    except LookupError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    return [
+        {
+            "source_id": str(o.source_id),
+            "name": o.name,
+            "domain": o.domain,
+            "automation_engine": o.automation_engine,
+            "engine": o.engine,
+            "runnable": o.runnable,
+            "denied_reasons": list(o.denied_reasons),
+        }
+        for o in options
+    ]
 
 
 @router.get("/events/{event_id}", response_model=EventDetailSchema)

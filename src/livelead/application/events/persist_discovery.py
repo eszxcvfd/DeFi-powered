@@ -5,12 +5,14 @@ from __future__ import annotations
 import logging
 from uuid import UUID
 
-from sqlalchemy import create_engine, select
+from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
+from livelead.application.events.finding_adapter import to_ingest_finding
 from livelead.application.events.ingest import ingest_finding
-from livelead.domain.events.normalize import mock_findings_for_items
-from livelead.infrastructure.db.models import Base, SourceRow
+from livelead.domain.discovery.finding import DiscoveryFinding
+from livelead.domain.events.normalize import MockFinding
+from livelead.infrastructure.db.models import Base
 from livelead.runtime.settings import parse_settings
 
 logger = logging.getLogger("livelead.events")
@@ -24,6 +26,32 @@ def _sync_session() -> Session:
     return sessionmaker(bind=engine)()
 
 
+def _ingest_many(
+    session: Session,
+    *,
+    org: UUID,
+    camp: UUID,
+    sid: str,
+    job_id: str,
+    findings: list[MockFinding],
+) -> tuple[int, int]:
+    created = merged = 0
+    for finding in findings:
+        _, action = ingest_finding(
+            session,
+            organization_id=org,
+            campaign_id=camp,
+            source_id=UUID(sid),
+            finding=finding,
+            discovery_job_id=job_id,
+        )
+        if action == "created":
+            created += 1
+        elif action == "merged":
+            merged += 1
+    return created, merged
+
+
 def persist_events_from_discovery_job(
     *,
     job_id: str,
@@ -31,33 +59,37 @@ def persist_events_from_discovery_job(
     campaign_id: str,
     sources_progress: dict,
     source_id_to_domain: dict[str, str],
+    source_findings: dict[str, list[DiscoveryFinding]] | None = None,
 ) -> int:
-    """Normalize findings with deduplication. Returns count of new canonical events."""
     session = _sync_session()
     created = 0
     merged = 0
+    source_findings = source_findings or {}
     try:
         org = UUID(organization_id)
         camp = UUID(campaign_id)
         for sid, prog in sources_progress.items():
-            items = int(prog.get("items_found") or 0)
-            if items <= 0:
+            real = source_findings.get(sid) or []
+            if not real:
+                items = int(prog.get("items_found") or 0)
+                if items > 0:
+                    logger.warning(
+                        "discovery_items_without_findings job_id=%s source_id=%s items_found=%s",
+                        job_id,
+                        sid,
+                        items,
+                    )
                 continue
-            domain = source_id_to_domain.get(sid, "events.example.com")
-            source_uuid = UUID(sid)
-            for finding in mock_findings_for_items(items, domain, source_uuid):
-                eid, action = ingest_finding(
-                    session,
-                    organization_id=org,
-                    campaign_id=camp,
-                    source_id=source_uuid,
-                    finding=finding,
-                    discovery_job_id=job_id,
-                )
-                if action == "created":
-                    created += 1
-                elif action == "merged":
-                    merged += 1
+            c, m = _ingest_many(
+                session,
+                org=org,
+                camp=camp,
+                sid=sid,
+                job_id=job_id,
+                findings=[to_ingest_finding(f) for f in real],
+            )
+            created += c
+            merged += m
         session.commit()
         if created or merged:
             logger.info(
@@ -70,15 +102,6 @@ def persist_events_from_discovery_job(
     finally:
         session.close()
     return created
-
-
-def load_source_domains(session: Session, source_ids: list[str]) -> dict[str, str]:
-    out: dict[str, str] = {}
-    for sid in source_ids:
-        row = session.execute(select(SourceRow).where(SourceRow.id == sid)).scalar_one_or_none()
-        if row:
-            out[sid] = row.domain
-    return out
 
 
 def score_campaign_events_sync(campaign_id: str, organization_id: str) -> int:

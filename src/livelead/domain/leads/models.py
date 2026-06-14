@@ -28,6 +28,7 @@ class LeadActivityKind(StrEnum):
     NOTE = "note"
     STAGE_CHANGED = "stage_changed"
     FIELD_UPDATED = "field_updated"
+    OUTCOME_RECORDED = "outcome_recorded"
 
 
 @dataclass(frozen=True, slots=True)
@@ -67,6 +68,9 @@ class LeadActivityEntry:
     from_stage: str
     to_stage: str
     created_at: datetime
+    outcome_type: str = ""
+    occurred_at: datetime | None = None
+    linked_content_draft_id: str = ""
 
 
 @dataclass(frozen=True, slots=True)

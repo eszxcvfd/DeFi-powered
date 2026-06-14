@@ -58,4 +58,7 @@ def row_to_activity(row: LeadActivityRow) -> LeadActivityEntry:
         from_stage=row.from_stage or "",
         to_stage=row.to_stage or "",
         created_at=row.created_at,
+        outcome_type=getattr(row, "outcome_type", None) or "",
+        occurred_at=getattr(row, "occurred_at", None),
+        linked_content_draft_id=getattr(row, "linked_content_draft_id", None) or "",
     )

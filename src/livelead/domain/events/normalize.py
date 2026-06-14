@@ -1,4 +1,4 @@
-"""Normalize mock discovery output into canonical events."""
+"""Normalize discovery findings into canonical events."""
 
 from __future__ import annotations
 
@@ -16,32 +16,6 @@ class MockFinding:
     description: str = ""
     organizer: str = ""
     region: str = ""
-
-
-def mock_findings_for_items(items_found: int, domain: str, source_id: UUID) -> list[MockFinding]:
-    if items_found <= 0:
-        return []
-    base = domain.replace(".", "-")
-    findings: list[MockFinding] = []
-    templates = [
-        ("B2B Payments Webinar", "webinar", "EU"),
-        ("Fintech Partnership Summit", "conference", "US"),
-        ("Cross-border Compliance Roundtable", "roundtable", "EU"),
-        ("SaaS Growth Meetup", "meetup", "APAC"),
-        ("Developer API Workshop", "workshop", "Global"),
-    ]
-    for i in range(items_found):
-        t = templates[i % len(templates)]
-        findings.append(
-            MockFinding(
-                title=f"{t[0]} — {base} #{i + 1}",
-                source_url=f"https://{domain}/events/{base}-{i + 1}",
-                description=f"Deterministic mock {t[1]} event for discovery review.",
-                organizer=f"Org {base}",
-                region=t[2],
-            )
-        )
-    return findings
 
 
 def build_canonical_from_finding(

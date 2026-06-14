@@ -12,6 +12,9 @@ class LeadActivitySchema(BaseModel):
     from_stage: str = ""
     to_stage: str = ""
     created_at: datetime
+    outcome_type: str = ""
+    occurred_at: datetime | None = None
+    linked_content_draft_id: str | None = None
 
 
 class LeadReminderSummarySchema(BaseModel):
@@ -19,6 +22,15 @@ class LeadReminderSummarySchema(BaseModel):
     state: str | None = None
     due_date: str | None = None
     reminder_id: str | None = None
+
+
+class LatestLeadOutcomeSchema(BaseModel):
+    outcome_type: str
+    occurred_at: datetime
+    actor: str
+    activity_id: UUID
+    linked_content_draft_id: UUID | None = None
+    notes: str = ""
 
 
 class LeadSummarySchema(BaseModel):
@@ -34,6 +46,9 @@ class LeadSummarySchema(BaseModel):
     follow_up_date: date | None = None
     updated_at: datetime
     reminder: LeadReminderSummarySchema = Field(default_factory=LeadReminderSummarySchema)
+    event_title: str = ""
+    region: str = ""
+    latest_outcome: LatestLeadOutcomeSchema | None = None
 
 
 class LeadDetailSchema(LeadSummarySchema):
@@ -77,6 +92,14 @@ class LeadPatchSchema(BaseModel):
     activity_note: str | None = None
     title: str | None = None
     company: str | None = None
+
+
+class RecordLeadOutcomeSchema(BaseModel):
+    outcome_type: str
+    occurred_at: datetime | None = None
+    notes: str = ""
+    linked_content_draft_id: UUID | None = None
+    linked_event_id: UUID | None = None
 
 
 class EventLeadLinkSchema(BaseModel):

@@ -7,9 +7,10 @@ from datetime import UTC, datetime
 from sqlalchemy import create_engine, select
 from sqlalchemy.orm import Session, sessionmaker
 
+from livelead.application.discovery.campaign_keywords import campaign_keywords
 from livelead.domain.discovery.lifecycle import aggregate_job_status
 from livelead.domain.discovery.models import DiscoveryJobStatus, SourceRunStatus
-from livelead.infrastructure.connectors.mock import run_mock_source
+from livelead.infrastructure.connectors.runner import run_source_connector
 from livelead.infrastructure.db.models import Base, DiscoveryJobRow, SourceRow
 from livelead.runtime.settings import parse_settings
 
@@ -54,9 +55,17 @@ def run_discovery_job(job_id: str) -> None:
         progress["events"].append({"type": "job.started", "at": datetime.now(UTC).isoformat()})
         _save_progress(row, progress, session)
 
+        settings = parse_settings()
+        if settings.discovery_use_mock_connectors:
+            logger.warning(
+                "discovery_mock_connectors_enabled job_id=%s — set LIVELEAD_DISCOVERY_USE_MOCK_CONNECTORS=false and restart worker for real feeds",
+                job_id,
+            )
         snapshot = json.loads(row.criteria_snapshot_json or "{}")
         source_ids = snapshot.get("source_ids", [])
         sources_progress = progress.get("sources", {})
+        source_findings: dict[str, list] = {}
+        positive, exclude = campaign_keywords(session, row.campaign_id)
 
         for sid in source_ids:
             session.refresh(row)
@@ -81,7 +90,22 @@ def run_discovery_job(job_id: str) -> None:
                 session.refresh(row)
                 return bool(row.cancel_requested)
 
-            result = run_mock_source(domain, cancel_check=cancel_check)
+            use_mock = settings.discovery_use_mock_connectors or domain.lower().endswith(
+                "mock.example.com"
+            )
+            if use_mock and not settings.discovery_use_mock_connectors:
+                logger.info("discovery_mock_domain_fixture domain=%s source_id=%s", domain, sid)
+            result, findings = run_source_connector(
+                connector_type=src_row.connector_type,
+                domain=domain,
+                rate_limit_json=src_row.rate_limit_json,
+                positive_keywords=positive,
+                exclude_keywords=exclude,
+                cancel_check=cancel_check,
+                use_mock_connectors=use_mock,
+            )
+            if findings:
+                source_findings[sid] = findings
             sources_progress[sid] = {
                 "status": result.status.value,
                 "items_found": result.items_found,
@@ -141,6 +165,7 @@ def run_discovery_job(job_id: str) -> None:
                 campaign_id=row.campaign_id,
                 sources_progress=sources_progress,
                 source_id_to_domain=domain_map,
+                source_findings=source_findings,
             )
             if created:
                 score_campaign_events_sync(row.campaign_id, row.organization_id)

@@ -15,6 +15,7 @@ from livelead.domain.reminders.classification import (
     may_reschedule,
 )
 from livelead.domain.reminders.models import FollowUpReminder, ReminderActionKind, ReminderState
+from livelead.infrastructure.db.repositories.events import EventRepository
 from livelead.infrastructure.db.repositories.leads import LeadRepository
 from livelead.infrastructure.db.repositories.reminders import (
     ReminderHistoryRepository,
@@ -30,6 +31,7 @@ class ReminderQueueItem:
     lead_display_name: str
     lead_company: str
     lead_stage: str
+    event_title: str = ""
 
 
 class ReminderService:
@@ -38,6 +40,7 @@ class ReminderService:
         self._reminders = ReminderRepository(session)
         self._history = ReminderHistoryRepository(session)
         self._leads = LeadRepository(session)
+        self._events = EventRepository(session)
 
     async def sync_from_lead(
         self,
@@ -130,12 +133,18 @@ class ReminderService:
             lead = await self._leads.get(rem.lead_id, organization_id)
             if not lead:
                 continue
+            event_title = lead.display_name
+            if lead.event_id:
+                ev = await self._events.get(lead.event_id, organization_id)
+                if ev:
+                    event_title = ev.canonical_title
             out.append(
                 ReminderQueueItem(
                     reminder=rem,
-                    lead_display_name=lead.display_name,
+                    lead_display_name=event_title,
                     lead_company=lead.company,
                     lead_stage=lead.stage.value,
+                    event_title=event_title,
                 )
             )
         return sorted(out, key=lambda i: i.reminder.due_date)

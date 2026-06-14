@@ -16,6 +16,21 @@ class EventRepository:
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
 
+    async def list_for_organization(
+        self,
+        organization_id: UUID,
+        *,
+        q: str | None = None,
+        limit: int = 100,
+    ) -> list[CanonicalEvent]:
+        stmt = select(EventRow).where(EventRow.organization_id == str(organization_id))
+        if q and q.strip():
+            like = f"%{q.strip().lower()}%"
+            stmt = stmt.where(func.lower(EventRow.canonical_title).like(like))
+        stmt = stmt.order_by(EventRow.observed_at.desc()).limit(max(1, min(limit, 500)))
+        result = await self._session.execute(stmt)
+        return [row_to_event(r) for r in result.scalars().all()]
+
     async def list_for_campaign(
         self,
         campaign_id: UUID,

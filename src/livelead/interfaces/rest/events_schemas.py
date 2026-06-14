@@ -37,6 +37,7 @@ class EventProvenanceSchema(BaseModel):
 class EventListItemSchema(BaseModel):
     id: UUID
     campaign_id: UUID
+    campaign_name: str = ""
     canonical_title: str
     source_url: str
     observed_at: datetime
@@ -166,6 +167,6 @@ class EventDetailSchema(BaseModel):
         default_factory=lambda: {
             "audience_feedback": "planned",
             "content_approval": "planned",
-            "browser": "planned",
+            "browser": "available",
         }
     )
