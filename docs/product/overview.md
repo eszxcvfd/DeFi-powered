@@ -1,24 +1,68 @@
 # LiveLead Product Overview
 
-Source: `SPEC.md` (`LLDE-SRS-001`, version 1.0.0, 2026-06-13).
+Source: `SPEC.md` (`LLDE-SRS-001`, version 1.1.0, 2026-06-14), plus
+`docs/product/mvp-scope-and-priorities.md`.
 
 ## Product Summary
 
 LiveLead is a web application for discovering livestreams, webinars, online
-conferences, and hybrid events that may contain qualified leads. It helps users
-define an ICP, discover permitted event sources, normalize event data, score
-event priority, prepare engagement plans, and track leads through an internal
+conferences, and hybrid events that may contain qualified leads, then helping a
+human operator decide how to interact around those events to open legitimate
+business conversations. The MVP stays centered on seven user jobs: define a
+market-search brief and ICP, discover permitted event sources, normalize and
+deduplicate event data, score event priority, prepare engagement playbooks,
+suggest human-reviewed interaction content, and track leads through an internal
 pipeline.
 
 The product is not an autonomous sales bot. MVP behavior must keep public
 posting, messaging, and other external actions under explicit human review and
 confirmation.
 
+The current product contract also assumes:
+
+- users may begin with a natural-language GenAI brief
+- interaction planning must support `UPCOMING`, `LIVE`, and `ENDED` event
+  states
+- channel strategy can span LinkedIn, Facebook, X, email, Instagram, YouTube,
+  TikTok, Pinterest, Threads, forums, Discord, website/blog, and other allowed
+  sources
+- the product supports an intermediary business model that opens opportunities
+  for partner companies instead of assuming direct service delivery
+- target-market focus can be weighted by region
+
+## Scope Hierarchy
+
+The current source of truth for MVP scope prioritization is
+`docs/product/mvp-scope-and-priorities.md`.
+
+LiveLead's seven core jobs are:
+
+1. Receive market-search intent, natural-language discovery questions, and
+   ideal customer profile inputs.
+2. Discover events from permitted sources.
+3. Normalize, deduplicate, and classify event state.
+4. Analyze audience signals and score event priority.
+5. Create engagement plans before, during, and after the event, by phase and
+   by channel.
+6. Suggest comments, questions, messages, email, and follow-up content for
+   human review.
+7. Save leads, activities, stages, and outcomes in the internal pipeline.
+
+Browser governance, operator tooling, and reporting remain supporting
+capabilities unless a later product decision explicitly raises them above one of
+the seven jobs above.
+
 ## MVP Principles
 
 - Value-first engagement: suggestions should help the audience before they ask
   for anything.
 - Human-controlled actions: users review and approve generated content.
+- Intermediary-first positioning: LiveLead helps open qualified conversations
+  and partner introductions instead of assuming direct service fulfillment.
+- Market-aware planning: campaigns and discovery can prioritize regions and
+  market mix intentionally.
+- State-aware playbooks: recommendations should differ for `UPCOMING`, `LIVE`,
+  and `ENDED` events.
 - Compliance by design: no CAPTCHA bypass, MFA bypass, access-control evasion,
   spam, or private-data scraping.
 - Source-aware data: event records include source URL, observation time, and
@@ -30,27 +74,44 @@ confirmation.
 - Auditability: discovery, lead changes, AI generation, approvals, and sensitive
   automation actions are traceable.
 
+## Supporting Capabilities
+
+These capabilities support the seven jobs above and should not become the
+primary product promise on their own:
+
+- Source policy, approvals, quotas, and secret handling.
+- Supervised browser-assisted access when feeds or official APIs are not
+  sufficient.
+- Browser confirmation, debug artifacts, profile lifecycle, and optional-engine
+  governance.
+- Reporting, export, audit, and operator visibility.
+
 ## Primary Users
 
 | Role | Product Need |
 | --- | --- |
 | Owner/Admin | Configure organization, users, source policy, quotas, audit, and governance. |
 | Analyst | Create campaigns, run discovery, review events, and produce reports. |
-| Sales/BD | Save leads, use engagement plans, update pipeline state, and record outcomes. |
+| Sales/BD | Save leads, use engagement plans, execute approved interactions, update pipeline state, and record outcomes. |
 | Reviewer | Approve, reject, or revise AI-generated engagement content. |
 | Viewer | Read dashboards, reports, and event details within granted permissions. |
 
 ## Core Product Domains
 
 - Organization, user, tenant, role, and permission management.
-- Campaign and ICP definition.
-- Source registry, source policy, connector configuration, and secret handling.
-- Discovery jobs, progress tracking, retry, cancellation, and scheduling.
+- Campaign and ICP definition, including natural-language brief parsing,
+  business model, and target-market weighting.
+- Source registry, source policy, connector configuration, multi-channel
+  coverage, and secret handling.
+- Discovery jobs, progress tracking, retry, cancellation, scheduling, and
+  structured discovery assumptions.
 - Event normalization, deduplication, provenance, and confidence.
 - Event list/detail views, filtering, watchlist, and calendar/export workflows.
 - Audience hypotheses, evidence links, scoring, and explainability.
-- Engagement plans, generated content, approval workflow, and anti-spam rules.
-- Browser-assisted sessions with policy enforcement and user confirmation.
+- Engagement plans, generated content, approval workflow, intermediary framing,
+  and anti-spam rules.
+- Browser-assisted sessions with policy enforcement and user confirmation as a
+  supporting access path, not a separate primary workflow.
 - Lead pipeline, activities, reminders, import/export, reporting, and audit.
 
 ## Implementation Status
@@ -82,12 +143,25 @@ confirmation.
   pipeline stages, duplicate guardrails, activity history, and table/Kanban UI.
 - **US-013 (Follow-up reminders):** Lead-linked reminders from follow-up dates,
   due/overdue queue, complete/reschedule, in-app banner, and pipeline cues.
+- **US-014 to US-019 (Reporting and outcomes):** Dashboard overview, lead
+  outcomes, funnel reporting, source-performance reporting,
+  content-effectiveness reporting, and report export extend the core lead and
+  pipeline jobs rather than adding a new product direction.
+- **US-020 to US-025 (Supporting browser governance):** Supervised browser
+  session launch, read-only actions, explicit confirmation, debug artifacts,
+  profile lifecycle, and CloakBrowser approval gates deepen the governed
+  browser-assist capability. These stories support core discovery and
+  human-reviewed outreach flows; they do not redefine LiveLead as a browser
+  automation platform.
 
 ## Non-Goals For MVP
 
 - Autonomous public comments, mass messaging, or connection invites.
+- Broad autonomous posting flows across any supported channel.
 - CAPTCHA, MFA, bot challenge, paywall, or private-account bypass.
 - Proxy rotation or evasion-oriented automation.
 - Sensitive attribute inference or face recognition.
 - Full enterprise CRM replacement.
 - Revenue or conversion guarantees.
+- Turning browser governance into the main product value path instead of a
+  supporting capability.

@@ -10,6 +10,9 @@ an uncontrolled credential store. LiveLead must define how browser profiles are
 created, locked, expired, renewed, and deleted, how consented cookie or storage
 state may be attached to them, and how the system keeps profile access tenant-
 scoped, auditable, and secret-safe.
+This profile lifecycle exists to support governed access for the core MVP jobs
+in `docs/product/mvp-scope-and-priorities.md`; it should not become a product
+goal separate from discovery, analysis, engagement, and pipeline tracking.
 
 ## MVP Scope
 

@@ -8,8 +8,9 @@ Sales and analyst users need ranked events and audience insight to turn into a
 concrete engagement plan before any AI-generated copy is produced. The product
 contract must define how LiveLead creates a three-phase engagement plan,
 structures tasks for before, during, and after the event, tracks task status
-and ownership, and applies value-first and anti-spam guardrails before the
-later content-studio workflow arrives.
+and ownership, preserves expected result / execution basis / estimated duration,
+and applies value-first and anti-spam guardrails before the later
+content-studio workflow arrives.
 
 ## MVP Scope
 
@@ -17,10 +18,17 @@ This product slice covers:
 
 - Creating an engagement plan for a scored event within campaign context.
 - Structuring tasks into `PRE_EVENT`, `LIVE_EVENT`, and `POST_EVENT` phases.
+- Generating recommendations that differ depending on whether the event is
+  currently `UPCOMING`, `LIVE`, or `ENDED`.
 - Tracking task status, assignee, deadline, and notes for plan execution.
+- Capturing channel, expected result, execution basis, and estimated duration
+  for each suggested task.
 - Showing an event-detail engagement view with plan phases and tasks.
 - Carrying enough context from event review, score, and audience hypotheses to
   make the plan actionable.
+- Preserving intermediary-first framing when the operator is opening an
+  opportunity for a partner company rather than directly delivering the end
+  service.
 - Applying guardrails that keep plans relevant, value-first, and safe for later
   content generation.
 
@@ -37,10 +45,15 @@ This product slice does not yet cover:
 - Every engagement plan must be linked to a canonical event and campaign scope.
 - Plans must separate before, during, and after event tasks instead of storing
   a flat undifferentiated checklist.
+- Plans must expose which event state and channel a suggestion is intended for.
 - Tasks must support at least `TODO`, `IN_PROGRESS`, `DONE`, and `SKIPPED`,
   with assignee and deadline fields available when the workflow needs them.
+- Every suggested task must keep `expected_result`, `execution_basis`, and
+  `estimated_duration` as first-class data, not free-form comments only.
 - Plan guidance must remain value-first and must not suggest spammy, deceptive,
   or unsupported claims about the event or audience.
+- Plan guidance must support intermediary positioning such as introductions,
+  opportunity opening, or partner framing when configured by the campaign.
 - Engagement plans may reuse score and audience context, but they must not
   blur into generated content artifacts or approval state as if copy already
   exists.
@@ -56,9 +69,10 @@ This product slice does not yet cover:
   for an event using current event, score, and audience context.
 - `GET /events/{id}`: return current engagement plan summary and tasks needed
   for event-detail review.
-- Plan and task payloads must expose phase, title, rationale, status, assignee,
-  deadline, and relevant context markers without implying content has been
-  approved or sent.
+- Plan and task payloads must expose phase, event state, channel, title,
+  rationale, expected result, execution basis, estimated duration, status,
+  assignee, deadline, and relevant context markers without implying content has
+  been approved or sent.
 
 ## UI Surface
 
@@ -67,6 +81,8 @@ content-studio behavior yet:
 
 - Event detail engagement tab or equivalent section.
 - Task groups for before, during, and after event phases.
+- Playbook cards or equivalent summaries showing expected result, execution
+  basis, and estimated time.
 - Clear task status, assignee, and due-date cues.
 - Empty-state or not-yet-generated messaging when a plan does not exist.
 

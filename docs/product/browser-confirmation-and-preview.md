@@ -11,6 +11,9 @@ destructive or external-side-effect actions, requires explicit confirm or cancel
 decisions before execution, and preserves audit context for those decisions,
 while keeping artifact retention, profile lifecycle, and CloakBrowser approval
 for later slices.
+This confirmation layer is a safeguard for the core MVP jobs in
+`docs/product/mvp-scope-and-priorities.md`; it is not a license for autonomous
+outreach or a new primary workflow.
 
 ## MVP Scope
 

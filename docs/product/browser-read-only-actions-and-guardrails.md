@@ -10,6 +10,9 @@ how LiveLead executes connector-allowlisted actions such as navigate, scroll,
 open detail, and read text through a stable adapter boundary, while enforcing
 selector resilience, action status visibility, and timeout or budget guardrails
 before destructive confirmation or debug-artifact stories widen scope.
+This slice exists to support permitted-source discovery and human-reviewed
+research, not to move the product away from the core MVP jobs in
+`docs/product/mvp-scope-and-priorities.md`.
 
 ## MVP Scope
 

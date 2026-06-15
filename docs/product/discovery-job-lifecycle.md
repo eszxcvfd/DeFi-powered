@@ -7,15 +7,16 @@ Source: `SPEC.md` sections 5.4, 7.2, 7.3, 11, 12, 14.1, and UC-01.
 Analysts need to launch a manual discovery run from a valid campaign and see a
 trustworthy lifecycle for that run before LiveLead connects to live external
 sources. The product contract must define how discovery jobs are created,
-tracked, cancelled, retried, and explained, using deterministic mock connectors
-first so queueing and UI behavior can be proven safely.
+tracked, cancelled, retried, and explained, including how a structured campaign
+or parsed natural-language brief turns into the snapshot that drives discovery.
 
 ## MVP Scope
 
 This product slice covers:
 
 - Manual discovery launch from a campaign.
-- Snapshotting campaign criteria and selected source context into the job record.
+- Snapshotting campaign criteria, target-market focus, and selected source
+  context into the job record.
 - Multi-source execution against deterministic mock connectors rather than live
   third-party systems.
 - A stable job state model: `QUEUED`, `RUNNING`, `PARTIAL`, `SUCCEEDED`,
@@ -30,7 +31,9 @@ This product slice does not yet cover:
 
 - Live external API, RSS, Playwright, or Selenium connectors.
 - Scheduler or cron-based discovery runs.
-- AI-assisted query expansion.
+- Full conversational discovery copilot. A prior brief may already have been
+  parsed into campaign criteria, but live question-answer discovery guidance
+  remains a follow-up slice.
 - Full event-detail, ranking, or scoring UX.
 - Interactive login or headed browser sessions. The first supervised session
   slice is defined in
@@ -42,6 +45,8 @@ This product slice does not yet cover:
   source selection.
 - The job record must keep a criteria snapshot so later review can explain what
   inputs produced the run.
+- When a campaign originated from a natural-language brief, the discovery
+  snapshot should preserve the resolved criteria and important assumptions.
 - Source policy must be checked before connector work begins, even in mock-run
   mode.
 - Job progress must expose both aggregate progress and per-source progress.
@@ -71,6 +76,8 @@ This product slice does not yet cover:
 The user-facing slice should center on a manual run workflow:
 
 - Review criteria and selected sources before launch.
+- Show enough resolved criteria context that the user can understand what the
+  discovery run is actually searching for.
 - Start a discovery job from a campaign detail or equivalent run surface.
 - See job status, aggregate progress, per-source progress, and error summaries.
 - Cancel a queued or running job.

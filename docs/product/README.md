@@ -1,14 +1,31 @@
-# Product Docs
+# LiveLead Product Docs
 
-This directory is intentionally generic and mostly empty in Harness v0.
+Source of truth hierarchy:
 
-When a user provides a project spec, derive smaller product contract files here
-instead of keeping one large spec as the living plan. Name files by the product
-domains that actually exist in that spec, for example `overview.md`,
-`billing.md`, `workflows.md`, `permissions.md`, or `api-conventions.md`.
+1. `SPEC.md`
+2. accepted decisions in `docs/decisions/`
+3. product-domain files in this directory
 
-Do not create domain files before the spec just to fill the folder. Empty
-structure is healthier than fake product truth.
+This directory now contains the living product contract for LiveLead, broken
+into smaller domain files so future stories can update only the surfaces they
+actually change.
+
+## Core Docs
+
+- `overview.md`: product summary, principles, roles, and non-goals.
+- `mvp-scope-and-priorities.md`: seven core jobs, guardrails, and priority
+  rules.
+- `campaign-and-icp.md`: campaign input, natural-language brief parsing, ICP,
+  target-market mix.
+- `source-registry-and-policy.md`: governed source catalog and channel policy.
+- `discovery-job-lifecycle.md`: discovery launch, progress, state model, and
+  structured criteria snapshots.
+- `engagement-plans-and-tasks.md`: event-state-aware playbooks and task
+  contracts.
+- `generated-content-and-safety.md`: reviewable AI drafts and safety rules.
+- `platform-and-automation-policy.md`: runtime and automation guardrails.
+- `audit-log-and-governance.md`: admin audit history, redaction, and governance
+  query surface.
 
 ## Update Rule
 

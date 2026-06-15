@@ -19,7 +19,8 @@ This product slice covers:
 - Generating draft content variants from event, score, audience, and engagement
   plan context.
 - Letting users choose content type, platform, language, tone, length, market
-  context, and CTA settings.
+  context, event state, intended result, business positioning, and CTA
+  settings.
 - Showing the context that will be sent to the generation system before
   generation runs.
 - Persisting generated drafts with provider or model metadata, input context,
@@ -43,6 +44,8 @@ This product slice does not yet cover:
   explicitly changes that lifecycle.
 - Every draft must keep generation metadata, including prompt-template version,
   provider or model, input context, output text, and last editor identity.
+- Every draft should also preserve enough structured context to explain its
+  target channel, event state, intended result, and business positioning.
 - The system must expose the context being sent for generation so users can
   validate what information shaped the drafts.
 - Risk flags must warn when content is overly promotional, lacks event
@@ -52,6 +55,8 @@ This product slice does not yet cover:
   enough metadata to explain what was generated and by which strategy.
 - The first content slice may create variants for later review, but it must not
   imply approval, sending, or external execution.
+- Draft generation must support intermediary-first framing when configured, but
+  it must not fabricate direct service-delivery claims the user did not choose.
 - Generated drafts should remain linked to the event and engagement plan that
   produced them so later reviewers can trace origin and context.
 
@@ -61,9 +66,9 @@ This product slice does not yet cover:
   engagement-plan context using selected generation settings.
 - `GET /events/{id}`: return generated-content summaries or equivalent draft
   references needed for event-detail or content-studio navigation.
-- Draft payloads must expose content type, platform, settings, output text,
-  risk flags, generation metadata, and edit history markers without implying
-  approval or sending.
+- Draft payloads must expose content type, platform, event state, intended
+  result, business positioning, settings, output text, risk flags, generation
+  metadata, and edit history markers without implying approval or sending.
 
 ## UI Surface
 
@@ -72,7 +77,7 @@ without claiming later approval or export behavior:
 
 - Context panel showing event and plan inputs.
 - Prompt or setting controls for content type, platform, language, tone,
-  length, market, and CTA.
+  length, market, event state, intended result, business positioning, and CTA.
 - Multiple draft variants.
 - Inline editor for draft refinement.
 - Visible risk flags or safety notes beside drafts.

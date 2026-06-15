@@ -1,6 +1,7 @@
 # Architecture
 
-Source: `SPEC.md` sections 2, 3, 7, 8, 9, 10, 11, 17, and 18.
+Source: `SPEC.md` (`LLDE-SRS-001`, version 1.1.0, 2026-06-14), especially
+sections 1, 2, 4, 5, 7, 8, 9, 10, 11, 14, and 16.
 
 This document replaces the generic Harness template with the current
 architecture direction for LiveLead. It is the implementation guardrail for
@@ -13,6 +14,7 @@ Related durable decisions:
 - `docs/decisions/0009-livelead-architecture-boundaries.md`
 - `docs/decisions/0010-livelead-sqlite-primary-store.md`
 - `docs/decisions/0011-livelead-technology-baseline.md`
+- `docs/decisions/0012-livelead-assisted-interaction-contract.md`
 
 ## Current Repo State
 
@@ -64,6 +66,8 @@ these selections.
 ## Product Surfaces
 
 - Browser-based web application for analysts, reviewers, admins, and sales/BD.
+- Copilot-assisted campaign setup where a natural-language brief can be parsed
+  into editable campaign criteria and target-market focus.
 - Backend API for UI, background workers, and future integrations.
 - Streaming channel for discovery progress and browser-session status.
 - Background job execution for discovery, scoring, scheduling, reminders, and
@@ -110,20 +114,21 @@ flowchart LR
 The implementation should preserve stable boundaries for these product domains:
 
 - Identity and tenancy: organization, user, session, role, tenant scope.
-- Campaigns and ICP: campaign definition, ICP filters, scoring weights, search
-  templates.
-- Sources and policy: source registry, connector type, source policy, quota,
-  credential references, approval metadata.
+- Campaigns and ICP: campaign definition, natural-language brief parsing,
+  business model, target-market weighting, ICP filters, scoring weights, and
+  search templates.
+- Sources and policy: source registry, connector type, multi-channel platform
+  coverage, source policy, quota, credential references, and approval metadata.
 - Discovery: job lifecycle, scheduling, progress, cancellation, retry, query
-  expansion.
+  expansion, and discovery-copilot assumptions.
 - Events: canonical event records, provenance, normalization, deduplication,
   watchlist, exports.
 - Audience and scoring: audience hypotheses, evidence links, event scoring,
   explainability, score versioning.
-- Engagement: plan phases, task tracking, generated content, approval workflow,
-  anti-spam policy.
+- Engagement: event-state-aware playbooks, task tracking, generated content,
+  approval workflow, anti-spam policy, and intermediary-first positioning.
 - Browser operations: browser profiles, sessions, allowed actions, screenshots,
-  confirmation checkpoints.
+  confirmation checkpoints, and single-action external execution controls.
 - Leads and reporting: leads, activities, reminders, funnel state, dashboards,
   exports.
 - Audit and governance: audit records, retention, deletion, feature flags,
@@ -208,6 +213,15 @@ not. In particular:
 - `apps` wire process startup, dependency injection, routing registration, job
   runners, and runtime configuration without owning domain rules.
 
+Within `application/services/`, the architecture should keep contract-sensitive
+flows explicit rather than burying them in generic helpers:
+
+- campaign brief parsing and normalization
+- target-market strategy resolution
+- discovery-orchestration and source selection
+- engagement playbook generation
+- generated-content assembly and safety checks
+
 ## Frontend Shape
 
 The frontend is an app surface, not a static marketing shell. MVP should expose
@@ -231,12 +245,13 @@ SQLite is the source of truth for product records, stored as a project-local
 database file such as `data/livelead.sqlite3`. It holds:
 
 - tenant and user metadata
-- campaigns and ICP settings
+- campaigns, natural-language briefs, business model, target-market mix, and
+  ICP settings
 - source registry and policy metadata
 - discovery jobs
 - canonical events and provenance
 - scoring records and explanations
-- engagement plans and generated content metadata
+- engagement plans, structured playbook tasks, and generated content metadata
 - leads and activities
 - browser profiles and session metadata
 - audit records
@@ -321,6 +336,30 @@ Rules:
 - External posting, submission, or destructive actions require explicit user
   confirmation.
 
+Natural-language campaign and interaction planning should follow this flow:
+
+```text
+user brief
+  -> copilot brief parser
+  -> editable campaign criteria + target-market mix
+  -> discovery snapshots
+  -> event ranking + audience evidence
+  -> event-state-aware playbooks
+  -> generated content drafts
+```
+
+Rules:
+
+- A parsed brief becomes editable structured criteria, not hidden prompt state.
+- Discovery snapshots should preserve both resolved criteria and any important
+  assumptions made while parsing the brief.
+- Engagement tasks must preserve `expected_result`, `execution_basis`, and
+  `estimated_duration` as first-class fields.
+- Generated content should inherit `channel`, `event_state`,
+  `business_positioning`, and intended result from the playbook or user inputs.
+- Public or external communication stays human-controlled: copy/manual by
+  default, or one explicitly confirmed side-effect action at a time.
+
 Recommended adapter contract:
 
 ```python
@@ -342,7 +381,11 @@ AI usage belongs behind a provider abstraction shared by scoring and engagement
 features. The abstraction must preserve:
 
 - prompt input grounding from approved product context
+- natural-language brief parsing into editable structured criteria
 - output labeling as AI-generated
+- event-state-aware and channel-aware playbook generation
+- structured output contracts for `expected_result`, `execution_basis`,
+  `estimated_duration`, assumptions, and risk flags
 - approval workflow before external use
 - logging of model/provider/version for auditability
 - prompt injection defense at connector and content boundaries
@@ -379,7 +422,8 @@ Implementation should prove architecture incrementally:
   enforcement, adapter contracts, secret handling, tenant enforcement.
 - Contract: connector normalization and provider boundary compatibility.
 - E2E: campaign creation, discovery progress, event review, content approval,
-  lead pipeline, browser-session confirmation flows.
+  lead pipeline, browser-session confirmation flows, and human-reviewed
+  interaction handoff.
 - Platform: local environment startup, browser worker isolation, artifact
   storage wiring, deployment smoke checks.
 - Security and audit: RBAC, tenant isolation, audit completeness, secret

@@ -10,6 +10,9 @@ are not sufficient. The product contract must define how LiveLead starts an
 isolated browser session, exposes live session state in the UI, and lets the
 user stop the session safely, while keeping action execution, destructive
 confirmation, profile administration, and debug artifacts for later slices.
+This is a supporting capability for the core MVP jobs in
+`docs/product/mvp-scope-and-priorities.md`, not a separate primary product
+track.
 
 ## MVP Scope
 

@@ -16,6 +16,9 @@ This product slice covers:
 - A registry of configured sources or connectors with connector type, domain,
   status, access policy, rate-limit settings, authentication mode, and approval
   metadata.
+- Channel families relevant to the product scope, including website event
+  pages, webinar platforms, YouTube, LinkedIn, Facebook, X, Instagram, TikTok,
+  Pinterest, Threads, Discord, forums, blogs, and community sites.
 - Policy-aware selection rules that prefer official API, RSS, Atom, sitemap, or
   ICS sources before browser automation when both are viable.
 - Policy enforcement inputs needed before discovery execution, including enabled
@@ -35,6 +38,9 @@ This product slice does not yet cover:
 - Governed browser-profile lifecycle and consented saved-state reuse. That
   first profile slice is defined in
   `docs/product/browser-profile-lifecycle-and-consent.md`.
+- CloakBrowser approval and source-scoped optional-engine policy. That first
+  CloakBrowser slice is defined in
+  `docs/product/cloakbrowser-policy-and-approvals.md`.
 - Read-only browser action execution. That first allowlisted action slice is
   defined in `docs/product/browser-read-only-actions-and-guardrails.md`.
 - CAPTCHA handling workflows beyond deny or safe-stop requirements.
@@ -44,6 +50,9 @@ This product slice does not yet cover:
 
 - Source records are organization-scoped governance objects even when the same
   external platform can appear in more than one tenant.
+- The registry should preserve enough metadata to distinguish platform family,
+  connector type, and communication surface because later engagement flows are
+  multi-channel.
 - A connector cannot be treated as runnable unless it is enabled, approved, and
   has a valid source policy record.
 - Source policy must expose enough information for later orchestrator checks:

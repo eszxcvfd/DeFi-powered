@@ -1,6 +1,7 @@
 # Platform And Automation Policy
 
-Source: `SPEC.md` sections 2.5, 3.4, 3.5, 5.3, 5.10, and 11.
+Source: `SPEC.md` sections 2.5, 3.4, 3.5, 5.3, 5.10, and 11, plus
+`docs/product/mvp-scope-and-priorities.md`.
 
 Related durable decisions:
 
@@ -50,10 +51,16 @@ isolation is needed:
 - Jobs must stop or enter `NEEDS_USER_ACTION` when CAPTCHA, MFA, or bot
   challenge behavior appears.
 - Headed interactive sessions are allowed when the user must log in or supervise.
+- Browser automation is a supporting access path for the core MVP jobs, used
+  only when permitted feeds, official APIs, or simpler manual review paths are
+  not sufficient. It must not become the primary product surface.
 - Sending content, posting, destructive actions, or external communication must
   require preview and confirmation.
   The first confirmation-gated slice is defined in
   `docs/product/browser-confirmation-and-preview.md`.
+- External communication should default to copy/manual handoff or one explicit
+  confirmation-gated action at a time; bulk or autonomous send flows are out of
+  MVP scope across all supported channels.
 - Read-only browser actions may run only from an explicit connector allowlist
   with stable-locator and timeout guardrails. The first action slice is defined
   in `docs/product/browser-read-only-actions-and-guardrails.md`.
@@ -63,6 +70,9 @@ isolation is needed:
 - Reusable browser profiles and saved browser-state material must remain
   consent-aware, tenant-scoped, and secret-safe. The first profile lifecycle
   slice is defined in `docs/product/browser-profile-lifecycle-and-consent.md`.
+- CloakBrowser must remain optional, source-scoped, approval-gated, and
+  kill-switchable. The first CloakBrowser governance slice is defined in
+  `docs/product/cloakbrowser-policy-and-approvals.md`.
 - Credentials and secrets must not be stored as plaintext or written to logs.
 - The SQLite database file must stay inside the project directory and outside
   version control.

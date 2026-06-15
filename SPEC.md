@@ -4,9 +4,9 @@
 
 **Tên tiếng Việt:** Công cụ tìm kiếm và tương tác Livestream khách hàng tiềm năng  
 **Mã tài liệu:** LLDE-SRS-001  
-**Phiên bản:** 1.0.0  
+**Phiên bản:** 1.1.0  
 **Trạng thái:** Baseline đề xuất cho MVP  
-**Ngày phát hành:** 2026-06-13  
+**Ngày phát hành:** 2026-06-14  
 **Ngôn ngữ tài liệu:** Tiếng Việt  
 **Chuẩn tham chiếu:** ISO/IEC/IEEE 29148:2018  
 
@@ -18,6 +18,7 @@
 |---|---:|---|---|
 | 0.1 | 2026-06-13 | Chuyển đổi ý tưởng ban đầu thành cấu trúc SRS | Bản nháp |
 | 1.0 | 2026-06-13 | Hoàn thiện yêu cầu MVP, kiến trúc Python, giao diện tương tác và browser automation | Baseline đề xuất |
+| 1.1 | 2026-06-14 | Bổ sung copilot GenAI, phạm vi tương tác đa kênh, playbook có kết quả/cách làm/thời gian, mô hình middleman và ưu tiên thị trường | Baseline đề xuất |
 
 ---
 
@@ -54,6 +55,15 @@ Hệ thống thực hiện bảy nhiệm vụ cốt lõi:
 
 Hệ thống **không phải bot bán hàng tự động**. Trong MVP, mọi hành động có khả năng tạo nội dung công khai hoặc gửi thông điệp tới người khác phải được người dùng xem xét và chủ động xác nhận bên ngoài hệ thống hoặc trong một bước xác nhận riêng.
 
+Phạm vi tương tác phải hỗ trợ cả ba trạng thái thời gian của sự kiện:
+
+- Livestream chưa diễn ra (`UPCOMING`).
+- Livestream đang diễn ra (`LIVE`).
+- Livestream đã kết thúc (`ENDED`).
+
+Với mỗi trạng thái, hệ thống phải gợi ý cách tiếp cận khác nhau để người dùng
+chọn và thực hiện nhằm tạo cơ hội kinh doanh hợp pháp.
+
 ## 1.3. Mục tiêu kinh doanh
 
 | Mã | Mục tiêu |
@@ -64,6 +74,8 @@ Hệ thống **không phải bot bán hàng tự động**. Trong MVP, mọi hà
 | BG-04 | Tăng số kết nối chuyên môn, cuộc trò chuyện, cuộc hẹn và cơ hội hợp tác có thể đo lường. |
 | BG-05 | Tạo một quy trình tìm kiếm lead qua sự kiện có thể lặp lại, kiểm soát và mở rộng. |
 | BG-06 | Duy trì nguyên tắc không spam, tôn trọng quyền riêng tư và điều khoản nền tảng. |
+| BG-07 | Hỗ trợ mô hình business trung gian (middleman) bằng cách mở ra cơ hội kết nối mới cho doanh nghiệp thay vì giả định hệ thống trực tiếp cung cấp dịch vụ cốt lõi. |
+| BG-08 | Ưu tiên khám phá và tương tác theo chiến lược thị trường mục tiêu, mặc định tập trung North America, China, India, UK và các khu vực cấu hình được. |
 
 ## 1.4. Đối tượng đọc
 
@@ -93,6 +105,8 @@ Hệ thống **không phải bot bán hàng tự động**. Trong MVP, mọi hà
 | Connector | Thành phần tích hợp với một nguồn dữ liệu hoặc nền tảng cụ thể. |
 | Adapter | Lớp trừu tượng cho phép thay đổi engine hoặc nhà cung cấp mà không ảnh hưởng nghiệp vụ. |
 | Human-in-the-loop | Cơ chế yêu cầu con người xem xét hoặc xác nhận trước hành động nhạy cảm. |
+| Interaction playbook | Gói hướng dẫn tương tác cho một event hoặc một kênh, gồm mục tiêu kỳ vọng, căn cứ thực hiện và thời gian ước tính. |
+| Information Service Sales Business Middleman | Mô hình kinh doanh trung gian, trong đó hệ thống hỗ trợ mở cơ hội cho doanh nghiệp khác thay vì giả định đơn vị vận hành trực tiếp triển khai dịch vụ cốt lõi cho khách hàng cuối. |
 | Public data | Dữ liệu hiển thị công khai, không yêu cầu vượt kiểm soát truy cập. |
 | Source policy | Cấu hình quy định nguồn nào được phép truy cập, tần suất và loại dữ liệu được thu thập. |
 | CloakBrowser | Chromium tùy biến có wrapper tương thích Playwright, chỉ được coi là adapter tùy chọn trong hệ thống. |
@@ -119,6 +133,11 @@ Hệ thống **không phải bot bán hàng tự động**. Trong MVP, mọi hà
 
 Thông tin sự kiện hiện phân tán trên nhiều kênh: công cụ tìm kiếm, website sự kiện, YouTube, LinkedIn, Facebook, X, Reddit, website hiệp hội, nền tảng webinar, lịch cộng đồng và trang của đơn vị tổ chức.
 
+Thông tin và cơ hội tương tác sau khi tìm thấy sự kiện cũng phân tán trên nhiều
+kênh: LinkedIn, Facebook, X, email, Instagram, YouTube, TikTok, Pinterest,
+Threads, forum, Discord, website của organizer hoặc speaker, blog và các kênh
+khác được cấu hình.
+
 LiveLead cung cấp một lớp hợp nhất gồm:
 
 - Khám phá dữ liệu.
@@ -138,6 +157,8 @@ LiveLead cung cấp một lớp hợp nhất gồm:
 6. **Replaceable automation:** Playwright, Selenium và engine Chromium tùy chọn được đặt sau một interface chung.
 7. **Privacy minimization:** chỉ lưu dữ liệu cần thiết cho mục đích nghiệp vụ hợp pháp.
 8. **Auditability:** thao tác thu thập, thay đổi lead, gọi AI và phê duyệt nội dung phải có log.
+9. **Intermediary-first:** hệ thống hỗ trợ mở kết nối và cơ hội cho doanh nghiệp khác; không được tự mô tả mặc định như bên trực tiếp triển khai mọi dịch vụ cho khách hàng cuối.
+10. **Market-aware:** chiến lược tìm kiếm và gợi ý phải cho phép ưu tiên theo thị trường mục tiêu và phân bổ trọng tâm khu vực.
 
 ## 2.3. Nhóm người dùng
 
@@ -146,7 +167,7 @@ LiveLead cung cấp một lớp hợp nhất gồm:
 | System Owner | Chủ hệ thống hoặc tenant | Quản lý tổ chức, chính sách, cấu hình tổng thể |
 | Administrator | Quản trị viên | Quản lý người dùng, connector, quota, audit |
 | Analyst | Nhân viên nghiên cứu/marketing | Tạo truy vấn, phân tích sự kiện, tạo báo cáo |
-| Sales/BD User | Nhân viên sales hoặc business development | Lưu lead, dùng engagement plan, cập nhật pipeline |
+| Sales/BD User | Nhân viên sales hoặc business development | Lưu lead, dùng engagement plan, thực hiện tương tác được duyệt, cập nhật pipeline |
 | Reviewer | Người duyệt nội dung | Duyệt hoặc từ chối nội dung AI đề xuất |
 | Viewer | Người chỉ xem | Xem dashboard, sự kiện, báo cáo được cấp quyền |
 | Service Account | Tài khoản máy | Chạy job nền theo phạm vi giới hạn |
@@ -190,6 +211,8 @@ LiveLead cung cấp một lớp hợp nhất gồm:
 | CON-08 | Mọi nội dung do AI tạo phải được gắn nhãn và có bước người dùng duyệt trước khi sử dụng. |
 | CON-09 | Không cam kết doanh thu; hệ thống chỉ hỗ trợ khám phá, phân tích và quản lý cơ hội. |
 | CON-10 | Thông tin xác thực nền tảng không được lưu dạng văn bản thuần. |
+| CON-11 | Mỗi playbook tương tác phải mô tả kết quả kỳ vọng, căn cứ thực hiện và thời gian ước tính ở mức tác vụ. |
+| CON-12 | Tương tác thực thi trên nền tảng bên ngoài trong MVP chỉ được hỗ trợ ở dạng copy/manual hoặc một action đơn lẻ có xác nhận rõ ràng; không có gửi hàng loạt hoặc tự động hoàn toàn. |
 
 ## 2.6. Giả định và phụ thuộc
 
@@ -318,12 +341,16 @@ Business logic không được import trực tiếp Playwright, Selenium hoặc 
 ## 4.1. Tạo chiến dịch tìm kiếm
 
 1. Người dùng tạo workspace hoặc campaign.
-2. Người dùng nhập lĩnh vực, sản phẩm, khu vực, ngôn ngữ, thời gian và ICP.
-3. Hệ thống kiểm tra dữ liệu và gợi ý từ khóa mở rộng.
-4. Người dùng chọn nguồn được phép tìm kiếm.
+2. Người dùng nhập lĩnh vực, sản phẩm, khu vực, ngôn ngữ, thời gian và ICP,
+   hoặc đặt câu hỏi ngôn ngữ tự nhiên cho GenAI như “các livestream trong lĩnh
+   vực Headhunt đang diễn ra ở đâu?”.
+3. Hệ thống kiểm tra dữ liệu, gợi ý từ khóa mở rộng, chuẩn hóa brief và đề xuất
+   kênh hoặc nguồn phù hợp.
+4. Người dùng chọn nguồn được phép tìm kiếm và thị trường ưu tiên.
 5. Hệ thống tạo discovery job.
 6. Worker tìm kiếm, chuẩn hóa, khử trùng lặp và lưu kết quả.
-7. Hệ thống chấm điểm sự kiện và hiển thị giải thích.
+7. Hệ thống chấm điểm sự kiện và hiển thị giải thích, bao gồm lý do vì sao một
+   event có thể chứa audience phù hợp với mô hình business trung gian.
 
 ## 4.2. Đánh giá một livestream
 
@@ -337,11 +364,16 @@ Business logic không được import trực tiếp Playwright, Selenium hoặc 
 
 1. Người dùng chọn sự kiện.
 2. Hệ thống xác định giai đoạn trước/đang/sau sự kiện.
-3. Hệ thống tạo checklist và nội dung gợi ý.
-4. Người dùng chọn giọng văn, ngôn ngữ, persona và CTA.
-5. AI tạo phương án có nguồn ngữ cảnh.
-6. Người dùng sửa, duyệt, sao chép hoặc đánh dấu đã sử dụng.
-7. Hệ thống lưu phiên bản và kết quả.
+3. Hệ thống tạo checklist và playbook tương tác theo giai đoạn và theo kênh.
+4. Mỗi gợi ý phải nêu rõ kết quả kỳ vọng, căn cứ thực hiện và thời gian ước
+   tính.
+5. Người dùng chọn giọng văn, ngôn ngữ, persona, CTA và mô hình positioning
+   trung gian phù hợp.
+6. AI tạo phương án có nguồn ngữ cảnh cho comment, câu hỏi, tin nhắn, email và
+   nội dung follow-up.
+7. Người dùng sửa, duyệt, sao chép hoặc dùng một action đã xác nhận rõ ràng nếu
+   connector và policy cho phép.
+8. Hệ thống lưu phiên bản và kết quả.
 
 ## 4.4. Tạo và quản lý lead
 
@@ -358,9 +390,11 @@ Business logic không được import trực tiếp Playwright, Selenium hoặc 
 3. Browser mở ở chế độ headed và hiển thị trạng thái cho người dùng.
 4. Người dùng tự đăng nhập nếu cần.
 5. Hệ thống chỉ thực hiện action đã được policy cho phép.
-6. Trước thao tác gửi nội dung, hệ thống dừng tại bước preview/confirmation.
-7. Người dùng chủ động xác nhận hoặc thực hiện thủ công.
-8. Hệ thống lưu audit event, không lưu mật khẩu.
+6. Nếu người dùng muốn comment hoặc gửi nội dung trên nền tảng, hệ thống chỉ
+   được hỗ trợ bằng preview/copy hoặc một action đơn lẻ có xác nhận rõ ràng.
+7. Trước thao tác gửi nội dung, hệ thống dừng tại bước preview/confirmation.
+8. Người dùng chủ động xác nhận hoặc thực hiện thủ công.
+9. Hệ thống lưu audit event, không lưu mật khẩu.
 
 ---
 
@@ -440,12 +474,31 @@ Quy ước ưu tiên:
 - **Ưu tiên:** Could
 - Người dùng có thể clone campaign để thử thị trường hoặc ICP khác.
 
+### FR-CAM-006 — Natural-language brief
+
+- **Ưu tiên:** Must
+- Người dùng phải có thể nhập brief ngôn ngữ tự nhiên cho GenAI, ví dụ hỏi
+  livestream trong một lĩnh vực đang diễn ra ở đâu hoặc cách tiếp cận nào phù
+  hợp để mở cơ hội kinh doanh.
+- Hệ thống phải chuyển brief này thành campaign criteria có thể kiểm tra và
+  chỉnh sửa được.
+
+### FR-CAM-007 — Strategic market focus
+
+- **Ưu tiên:** Should
+- Campaign phải hỗ trợ cấu hình trọng tâm thị trường theo khu vực.
+- Mặc định hệ thống nên hỗ trợ profile phân bổ như North America 50%, China
+  10%, India 10%, UK 10% và phần còn lại cấu hình được.
+
 ## 5.3. Quản lý nguồn dữ liệu
 
 ### FR-SRC-001 — Danh mục nguồn
 
 - **Ưu tiên:** Must
 - Hệ thống phải có danh mục nguồn gồm loại connector, domain, trạng thái, chính sách truy cập, rate limit, phương thức xác thực và người phê duyệt.
+- Danh mục nguồn phải hỗ trợ ít nhất các nhóm kênh thường gặp trong bài toán:
+  website sự kiện, YouTube, LinkedIn, Facebook, X, Instagram, TikTok,
+  Pinterest, Threads, Discord, forum, blog, community site và webinar platform.
 
 ### FR-SRC-002 — Nguồn ưu tiên API/RSS/ICS
 
@@ -532,6 +585,13 @@ Quy ước ưu tiên:
 - **Ưu tiên:** Must
 - Lỗi mạng tạm thời được retry với exponential backoff và jitter.
 - Lỗi policy, authentication hoặc CAPTCHA không được retry vô hạn.
+
+### FR-DIS-009 — GenAI discovery copilot
+
+- **Ưu tiên:** Should
+- Hệ thống nên hỗ trợ một chế độ hỏi đáp để người dùng hỏi bằng ngôn ngữ tự
+  nhiên về livestream theo lĩnh vực, thị trường, thời gian hoặc loại audience.
+- Kết quả phải quy về truy vấn có cấu trúc, nguồn đề xuất và giả định rõ ràng.
 
 ## 5.5. Chuẩn hóa và khử trùng lặp
 
@@ -711,6 +771,8 @@ Ngưỡng phải cấu hình được theo workspace.
 
 - **Ưu tiên:** Must
 - Hệ thống phải tạo checklist riêng cho trước, trong và sau sự kiện.
+- Với event `UPCOMING`, `LIVE` và `ENDED`, hệ thống phải tạo gợi ý khác nhau
+  theo trạng thái thời gian.
 
 ### FR-ENG-002 — Trạng thái task
 
@@ -720,7 +782,9 @@ Ngưỡng phải cấu hình được theo workspace.
 ### FR-ENG-003 — Gợi ý theo nền tảng
 
 - **Ưu tiên:** Must
-- Hệ thống phải tạo gợi ý khác nhau cho LinkedIn, YouTube, X, email, blog và kênh được hỗ trợ.
+- Hệ thống phải tạo gợi ý khác nhau cho LinkedIn, Facebook, X, email,
+  Instagram, YouTube, TikTok, Pinterest, Threads, forum, Discord, website/blog
+  và kênh được hỗ trợ.
 
 ### FR-ENG-004 — Loại nội dung
 
@@ -740,6 +804,9 @@ Ngưỡng phải cấu hình được theo workspace.
 
 - **Ưu tiên:** Must
 - Người dùng chọn ngôn ngữ, mức trang trọng, độ dài, thị trường văn hóa và CTA.
+- Hệ thống phải hỗ trợ framing nội dung cho mô hình business trung gian, ví dụ
+  giới thiệu cơ hội kết nối, giới thiệu đối tác, hoặc mở đầu cuộc trò chuyện
+  thay vì giả định đơn vị vận hành trực tiếp cung cấp toàn bộ dịch vụ cốt lõi.
 
 ### FR-ENG-006 — Versioning nội dung
 
@@ -772,6 +839,24 @@ Ngưỡng phải cấu hình được theo workspace.
 
 - **Ưu tiên:** Won't (MVP)
 - MVP không tự động đăng bình luận hoặc gửi tin nhắn hàng loạt.
+
+### FR-ENG-011 — Playbook structure
+
+- **Ưu tiên:** Must
+- Mỗi task hoặc gợi ý tương tác phải có tối thiểu:
+  - Kết quả kỳ vọng.
+  - Căn cứ hoặc cách làm để đạt kết quả đó.
+  - Thời gian ước tính.
+- Thông tin này phải hiển thị trong UI và lưu được trong dữ liệu kế hoạch.
+
+### FR-ENG-012 — Assisted interaction execution
+
+- **Ưu tiên:** Should
+- Với kênh và connector được phép, hệ thống có thể hỗ trợ thực hiện một action
+  đơn lẻ như mở form, điền nội dung đã duyệt hoặc submit comment, nhưng chỉ sau
+  preview và xác nhận rõ ràng của người dùng.
+- MVP không hỗ trợ bulk send, autonomous posting hoặc chuỗi hành động lặp không
+  có xác nhận.
 
 ## 5.10. Browser-assisted interaction
 
@@ -1044,12 +1129,12 @@ Login
 
 Các bước:
 
-1. Mục tiêu.
-2. Lĩnh vực và từ khóa.
-3. ICP.
-4. Khu vực/thời gian.
-5. Nguồn.
-6. Trọng số.
+1. Mục tiêu hoặc brief ngôn ngữ tự nhiên cho GenAI.
+2. Lĩnh vực, từ khóa và từ khóa loại trừ.
+3. ICP và giả thuyết audience.
+4. Khu vực, thời gian và phân bổ thị trường mục tiêu.
+5. Nguồn và kênh ưu tiên.
+6. Trọng số, guardrail và positioning.
 7. Review và chạy.
 
 ### UI-003 — Event discovery results
@@ -1074,6 +1159,7 @@ Các bước:
 - Context panel.
 - Prompt controls.
 - Nhiều output variants.
+- Playbook card hiển thị kết quả kỳ vọng, căn cứ thực hiện và thời gian ước tính.
 - Inline editor.
 - Review checklist.
 - Approval history.
@@ -1162,6 +1248,7 @@ Ví dụ lỗi:
 | POST | `/events/{id}/engagement-plans` | Tạo kế hoạch |
 | POST | `/content/generate` | Tạo nội dung AI |
 | POST | `/content/{id}/approve` | Duyệt nội dung |
+| POST | `/campaigns/briefs:parse` | Chuyển brief ngôn ngữ tự nhiên thành campaign criteria |
 | GET/POST | `/leads` | Danh sách/tạo lead |
 | GET/PATCH | `/leads/{id}` | Chi tiết/cập nhật lead |
 | POST | `/browser-sessions` | Tạo browser session |
@@ -1232,7 +1319,10 @@ Webhook phải có chữ ký HMAC, timestamp và retry policy.
 - `organization_id`
 - `name`
 - `description`
+- `natural_language_brief`
+- `business_model`
 - `market_regions[]`
+- `target_market_mix_json`
 - `languages[]`
 - `date_range`
 - `keywords[]`
@@ -1353,9 +1443,12 @@ Webhook phải có chữ ký HMAC, timestamp và retry policy.
 - `id`
 - `event_id`
 - `campaign_id`
+- `event_state`
 - `status`
 - `language`
 - `tone`
+- `business_goal`
+- `business_positioning`
 - `created_by`
 - `created_at`
 
@@ -1367,6 +1460,9 @@ Webhook phải có chữ ký HMAC, timestamp và retry policy.
 - `title`
 - `description`
 - `channel`
+- `expected_result`
+- `execution_basis`
+- `estimated_duration_minutes`
 - `status`
 - `due_at`
 - `assignee_id`
@@ -1377,8 +1473,11 @@ Webhook phải có chữ ký HMAC, timestamp và retry policy.
 - `plan_id`
 - `content_type`
 - `channel`
+- `event_state`
 - `language`
 - `tone`
+- `intended_result`
+- `business_positioning`
 - `input_context_json`
 - `prompt_template_version`
 - `provider`
@@ -1529,17 +1628,29 @@ Không được tự động gửi output AI ra nền tảng bên ngoài trong M
 
 Người dùng phải có thể đánh giá output bằng thumbs up/down và lý do.
 
-## 9.4. Prompt injection defense
-
 ### AI-010
 
-Nội dung lấy từ web phải được coi là dữ liệu không đáng tin, không phải instruction.
+Hệ thống nên hỗ trợ Copilot hỏi đáp bằng ngôn ngữ tự nhiên để người dùng hỏi
+livestream đang diễn ra ở đâu, audience nào có khả năng tham gia, hoặc nên tương
+tác như thế nào theo trạng thái `UPCOMING`, `LIVE`, `ENDED`.
 
 ### AI-011
 
-Hệ thống phải tách system instruction, user intent và source content; phải lọc hoặc đánh dấu nội dung yêu cầu tiết lộ secret hoặc thay đổi hành vi hệ thống.
+Khi sinh playbook hoặc nội dung tương tác, output phải tuân thủ schema có ít
+nhất các trường `channel`, `event_state`, `expected_result`, `execution_basis`,
+`estimated_duration`, `assumptions` và `risk_flags`.
+
+## 9.4. Prompt injection defense
 
 ### AI-012
+
+Nội dung lấy từ web phải được coi là dữ liệu không đáng tin, không phải instruction.
+
+### AI-013
+
+Hệ thống phải tách system instruction, user intent và source content; phải lọc hoặc đánh dấu nội dung yêu cầu tiết lộ secret hoặc thay đổi hành vi hệ thống.
+
+### AI-014
 
 Tool call do model đề xuất phải được policy engine kiểm tra và chỉ chạy action allowlisted.
 
@@ -1815,15 +1926,16 @@ CloakBrowser được thiết kế dưới dạng adapter tùy chọn, không ph
 
 **Luồng chính:**
 
-1. Hệ thống hiển thị review tiêu chí.
-2. Người dùng xác nhận nguồn và giới hạn.
-3. Hệ thống tạo discovery job.
-4. Worker chạy connector.
-5. Kết quả được chuẩn hóa và khử trùng lặp.
-6. Scoring service chấm điểm.
-7. UI cập nhật tiến trình.
-8. Hệ thống thông báo hoàn tất.
-9. Người dùng xem danh sách xếp hạng.
+1. Người dùng nhập campaign criteria hoặc brief ngôn ngữ tự nhiên cho GenAI.
+2. Hệ thống chuyển brief thành tiêu chí có cấu trúc để người dùng review.
+3. Người dùng xác nhận nguồn, giới hạn và thị trường mục tiêu ưu tiên.
+4. Hệ thống tạo discovery job.
+5. Worker chạy connector.
+6. Kết quả được chuẩn hóa, khử trùng lặp và phân loại `UPCOMING`, `LIVE`, `ENDED`.
+7. Scoring service chấm điểm và giải thích độ phù hợp với ICP hoặc mô hình trung gian.
+8. UI cập nhật tiến trình.
+9. Hệ thống thông báo hoàn tất.
+10. Người dùng xem danh sách xếp hạng.
 
 **Luồng thay thế:**
 
@@ -1851,15 +1963,15 @@ CloakBrowser được thiết kế dưới dạng adapter tùy chọn, không ph
 **Actor:** Sales/BD User hoặc Analyst  
 **Tiền điều kiện:** Event có đủ context tối thiểu.
 
-1. Người dùng chọn loại nội dung.
-2. Chọn nền tảng, ngôn ngữ, tone, CTA.
+1. Người dùng chọn loại nội dung hoặc playbook cần tạo.
+2. Chọn nền tảng, trạng thái event, ngôn ngữ, tone, CTA và positioning trung gian.
 3. Hệ thống hiển thị context sẽ gửi tới AI.
 4. Người dùng xác nhận.
-5. AI tạo tối đa số phương án cấu hình.
+5. AI tạo tối đa số phương án cấu hình kèm kết quả kỳ vọng, căn cứ thực hiện và thời gian ước tính.
 6. Safety checker gắn risk flags.
 7. Người dùng chỉnh sửa và gửi review.
 8. Reviewer duyệt hoặc từ chối.
-9. Người dùng sao chép nội dung đã duyệt.
+9. Người dùng sao chép nội dung đã duyệt hoặc dùng một external action đơn lẻ đã được xác nhận.
 
 ## UC-04 — Mở browser-assisted session
 
@@ -1896,16 +2008,19 @@ CloakBrowser được thiết kế dưới dạng adapter tùy chọn, không ph
 
 | Mã | Tiêu chí |
 |---|---|
-| AC-BIZ-01 | Người dùng tạo được campaign với lĩnh vực, khu vực, ICP và từ khóa. |
+| AC-BIZ-01 | Người dùng tạo được campaign với lĩnh vực, khu vực, ICP, từ khóa hoặc brief ngôn ngữ tự nhiên được chuyển thành tiêu chí chỉnh sửa được. |
 | AC-BIZ-02 | Hệ thống tìm được event từ ít nhất ba loại connector thử nghiệm: một API/RSS, một website công khai bằng Playwright và một connector Selenium hoặc adapter thay thế. |
 | AC-BIZ-03 | Kết quả được chuẩn hóa, khử trùng lặp và phân loại upcoming/live/ended. |
 | AC-BIZ-04 | Mỗi event có score 0–100 và giải thích thành phần. |
 | AC-BIZ-05 | Hệ thống tạo được audience hypothesis có confidence và evidence. |
-| AC-BIZ-06 | Hệ thống tạo kế hoạch trước/trong/sau và ít nhất năm loại nội dung. |
-| AC-BIZ-07 | Nội dung AI có workflow draft-review-approve và không tự gửi. |
-| AC-BIZ-08 | Người dùng tạo, cập nhật và theo dõi lead trên table/Kanban. |
-| AC-BIZ-09 | Dashboard hiển thị event, lead, response, meeting và opportunity metrics từ dữ liệu ghi nhận. |
-| AC-BIZ-10 | Người dùng export event/lead/report được. |
+| AC-BIZ-06 | Hệ thống tạo kế hoạch trước/trong/sau, phân biệt theo trạng thái upcoming/live/ended và ít nhất năm loại nội dung. |
+| AC-BIZ-07 | Mỗi playbook hoặc task tương tác đều có kết quả kỳ vọng, căn cứ thực hiện và thời gian ước tính. |
+| AC-BIZ-08 | Nội dung AI có workflow draft-review-approve, hỗ trợ framing trung gian và không tự gửi hàng loạt. |
+| AC-BIZ-09 | Hệ thống hỗ trợ ít nhất các kênh LinkedIn, Facebook, X, YouTube và email, đồng thời cho phép mở rộng danh mục kênh cấu hình được. |
+| AC-BIZ-10 | Người dùng tạo, cập nhật và theo dõi lead trên table/Kanban. |
+| AC-BIZ-11 | Dashboard hiển thị event, lead, response, meeting và opportunity metrics từ dữ liệu ghi nhận. |
+| AC-BIZ-12 | Người dùng export event/lead/report được. |
+| AC-BIZ-13 | Với connector được phép, hệ thống chỉ hỗ trợ copy/manual hoặc một external action đơn lẻ có preview và confirmation rõ ràng. |
 
 ## 14.2. Nghiệm thu browser automation
 
@@ -1944,6 +2059,8 @@ CloakBrowser được thiết kế dưới dạng adapter tùy chọn, không ph
 - Permission checks.
 - Source policy.
 - Confirmation token.
+- Natural-language brief parsing về campaign criteria.
+- Playbook schema gồm `expected_result`, `execution_basis`, `estimated_duration`.
 - Prompt construction và output validation.
 
 ## 15.2. Integration test
@@ -2014,12 +2131,14 @@ Mỗi persona hoàn thành một campaign từ discovery tới lead follow-up pl
 
 | Mục tiêu | Yêu cầu liên quan | Kiểm thử chính |
 |---|---|---|
-| BG-01 Giảm thời gian tìm kiếm | FR-DIS-001..008, FR-SRC-002..004 | E2E discovery, performance test |
+| BG-01 Giảm thời gian tìm kiếm | FR-CAM-006, FR-DIS-001..009, FR-SRC-002..004 | E2E discovery, performance test |
 | BG-02 Tập trung event chất lượng | FR-AUD-001..005, FR-SCO-001..006 | Scoring unit/UAT |
-| BG-03 Chuẩn hóa tương tác | FR-ENG-001..010 | Content workflow E2E |
+| BG-03 Chuẩn hóa tương tác | FR-ENG-001..012 | Content workflow E2E |
 | BG-04 Tăng kết nối/cơ hội | FR-LEAD-001..008, FR-REP-001..004 | Pipeline UAT |
-| BG-05 Quy trình lặp lại | FR-CAM-001..005, FR-DIS-006, FR-REP | Scheduled job/integration |
+| BG-05 Quy trình lặp lại | FR-CAM-001..007, FR-DIS-006, FR-REP | Scheduled job/integration |
 | BG-06 Compliance | FR-SRC-004..007, FR-BRW-005..012, NFR-PRIV | Security/compliance test |
+| BG-07 Mô hình middleman | FR-CAM-007, FR-ENG-005, AI-011 | UAT playbook framing, content review |
+| BG-08 Ưu tiên thị trường mục tiêu | FR-CAM-007, FR-DIS-009, UI-002 | Campaign UAT, discovery result review |
 
 ---
 

@@ -10,6 +10,9 @@ LiveLead must define when screenshot, console-log, and trace artifacts may be
 captured, how users access them, how long they are retained, and how the
 system prevents secrets or cross-tenant data leakage while keeping browser
 debugging practical.
+This is a supporting governance slice for the core MVP jobs in
+`docs/product/mvp-scope-and-priorities.md`, not a primary user-value track by
+itself.
 
 ## MVP Scope
 
