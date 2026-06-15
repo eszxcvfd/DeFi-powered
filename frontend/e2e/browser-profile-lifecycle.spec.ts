@@ -44,8 +44,9 @@ test("admin browser profile lifecycle and governed session", async ({ page }) =>
   });
   expect(session.ok()).toBeTruthy();
 
-  await page.getByTestId("browser-profile-lock").first().click();
-  await expect(page.getByTestId("browser-profile-blocked").first()).toBeVisible({ timeout: 10_000 });
+  const profileRow = page.getByTestId("browser-profile-row").filter({ hasText: profileName });
+  await profileRow.getByTestId("browser-profile-lock").click();
+  await expect(profileRow.getByTestId("browser-profile-blocked")).toBeVisible({ timeout: 10_000 });
 
   const blocked = await page.request.post("/browser-sessions", {
     headers: { "X-Actor-Role": "admin", "Content-Type": "application/json" },

@@ -1,5 +1,12 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import {
+  approveCompliance,
+  approveOwnerAdmin,
+  getCloakBrowserPolicy,
+  requestCloakBrowser,
+  revokeCloakBrowser,
+} from "@/api/cloakbrowserPolicy";
 import { createConnector, listConnectors } from "@/api/connectors";
 import { AppPageHeader } from "@/components/layout/AppPageHeader";
 import { AppPageShell, PAGE_CONTENT_CLASS } from "@/components/layout/AppPageShell";
@@ -9,6 +16,7 @@ import { LIST_PAGE_SIZE } from "@/constants/listPageSize";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import type { CloakBrowserPolicyView } from "@/types/cloakbrowserPolicy";
 import type { ConnectorView } from "@/types/connector";
 import { Plus, ShieldAlert, Key, Chrome, Rss, Link2, Settings2, Database, ShieldCheck } from "lucide-react";
 
@@ -17,6 +25,9 @@ export default function AdminConnectors() {
   const [name, setName] = useState("");
   const [domain, setDomain] = useState("");
   const [page, setPage] = useState(1);
+  const [cloakSourceId, setCloakSourceId] = useState<string | null>(null);
+  const [cloakPolicy, setCloakPolicy] = useState<CloakBrowserPolicyView | null>(null);
+  const [cloakRationale, setCloakRationale] = useState("");
 
   async function refresh() {
     setItems(await listConnectors());
@@ -147,7 +158,20 @@ export default function AdminConnectors() {
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {currentItems.map((c) => (
-                  <tr key={c.id} className="hover:bg-slate-50/20 transition-colors" data-testid="connector-row">
+                  <tr
+                    key={c.id}
+                    className="hover:bg-slate-50/20 transition-colors cursor-pointer"
+                    data-testid="connector-row"
+                    onClick={() => {
+                      if (c.automation_engine === "cloakbrowser") {
+                        setCloakSourceId(c.id);
+                        void getCloakBrowserPolicy(c.id).then(setCloakPolicy).catch(() => setCloakPolicy(null));
+                      } else {
+                        setCloakSourceId(null);
+                        setCloakPolicy(null);
+                      }
+                    }}
+                  >
                     <td className="px-5 py-4 font-semibold text-slate-900">
                       <div className="flex flex-col">
                         <span>{c.name}</span>
@@ -183,6 +207,82 @@ export default function AdminConnectors() {
             </table>
 
           <ListPagination page={page} totalItems={items.length} onPageChange={setPage} testId="admin-connectors-pagination" />
+
+          {cloakSourceId && (
+            <div
+              className="mt-6 border border-slate-200 rounded-sm p-5 bg-slate-50/40"
+              data-testid="cloakbrowser-policy-panel"
+            >
+              <h3 className="text-sm font-semibold text-slate-800 mb-2">CloakBrowser governance</h3>
+              {cloakPolicy ? (
+                <>
+                  <p className="text-xs font-mono text-slate-600 mb-3" data-testid="cloakbrowser-policy-state">
+                    state: {cloakPolicy.policy_state} · runtime: {cloakPolicy.runtime_status}
+                    {cloakPolicy.kill_switch_active ? " · kill-switch ON" : ""}
+                  </p>
+                  {cloakPolicy.blocked_reasons.length > 0 && (
+                    <p className="text-xs text-amber-800 mb-3" data-testid="cloakbrowser-blocked-reasons">
+                      blocked: {cloakPolicy.blocked_reasons.join(", ")}
+                    </p>
+                  )}
+                  <div className="flex flex-wrap gap-2 items-end">
+                    <Input
+                      data-testid="cloakbrowser-rationale"
+                      value={cloakRationale}
+                      onChange={(e) => setCloakRationale(e.target.value)}
+                      placeholder="Purpose rationale"
+                      className="max-w-md text-sm"
+                    />
+                    <Button
+                      type="button"
+                      data-testid="cloakbrowser-request"
+                      variant="ghost"
+                      className="text-xs border border-slate-200"
+                      onClick={() =>
+                        void requestCloakBrowser(cloakSourceId, {
+                          purpose_rationale: cloakRationale || "Governed partner access",
+                          pinned_version: "1.0.0",
+                        }).then(setCloakPolicy)
+                      }
+                    >
+                      Request
+                    </Button>
+                    <Button
+                      type="button"
+                      data-testid="cloakbrowser-approve-owner"
+                      variant="ghost"
+                      className="text-xs border border-slate-200"
+                      onClick={() => void approveOwnerAdmin(cloakSourceId).then(setCloakPolicy)}
+                    >
+                      Owner/Admin approve
+                    </Button>
+                    <Button
+                      type="button"
+                      data-testid="cloakbrowser-approve-compliance"
+                      variant="ghost"
+                      className="text-xs border border-slate-200"
+                      onClick={() => void approveCompliance(cloakSourceId).then(setCloakPolicy)}
+                    >
+                      Compliance approve
+                    </Button>
+                    <Button
+                      type="button"
+                      data-testid="cloakbrowser-revoke"
+                      variant="ghost"
+                      className="text-xs border border-slate-200"
+                      onClick={() =>
+                        void revokeCloakBrowser(cloakSourceId, "admin revoke").then(setCloakPolicy)
+                      }
+                    >
+                      Revoke
+                    </Button>
+                  </div>
+                </>
+              ) : (
+                <p className="text-xs text-slate-500">Loading policy…</p>
+              )}
+            </div>
+          )}
         </AppSection>
         </div>
       </div>

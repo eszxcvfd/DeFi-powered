@@ -62,6 +62,7 @@ function adminProxyBypass(req: { method?: string; url?: string; headers?: Record
     return null;
   }
   if (path.startsWith("/admin/browser-profiles/")) return null;
+  if (path.startsWith("/admin/cloakbrowser-policy")) return null;
   if (ADMIN_CONNECTOR_ID.test(path)) return null;
   return path;
 }
