@@ -49,6 +49,26 @@ class AppSettings(BaseSettings):
         default=None,
         description="Optional CloakBrowser/Chromium binary for cloakbrowser engine connectors",
     )
+    cloakbrowser_kill_switch: bool = Field(
+        default=False,
+        description="When true, CloakBrowser engine use is blocked globally (US-025)",
+    )
+    cloakbrowser_pinned_version: str | None = Field(
+        default=None,
+        description="Globally pinned CloakBrowser runtime version for policy checks",
+    )
+    cloakbrowser_runtime_version: str | None = Field(
+        default=None,
+        description="Observed CloakBrowser runtime version for checksum/pin checks",
+    )
+    cloakbrowser_expected_checksum: str | None = Field(
+        default=None,
+        description="Expected CloakBrowser artifact checksum when verification is enabled",
+    )
+    cloakbrowser_runtime_checksum: str | None = Field(
+        default=None,
+        description="Observed CloakBrowser artifact checksum at runtime",
+    )
     browser_profile_root: Path = Field(
         default_factory=lambda: Path("data/browser_profiles"),
         description="Per-session isolated profile storage root",

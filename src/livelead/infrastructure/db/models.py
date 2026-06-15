@@ -376,6 +376,28 @@ class BrowserProfileRow(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 
+class CloakBrowserPolicyRow(Base):
+    __tablename__ = "cloakbrowser_policies"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    organization_id: Mapped[str] = mapped_column(String(36), index=True, nullable=False)
+    source_id: Mapped[str] = mapped_column(String(36), index=True, nullable=False)
+    purpose_rationale: Mapped[str] = mapped_column(Text, default="")
+    owner_admin_approved: Mapped[bool] = mapped_column(Boolean, default=False)
+    compliance_approved: Mapped[bool] = mapped_column(Boolean, default=False)
+    owner_admin_actor: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    compliance_actor: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    owner_admin_approved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    compliance_approved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    revoked_by: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    revoke_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    pinned_version: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    expected_checksum: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
 class BrowserDebugArtifactRow(Base):
     __tablename__ = "browser_debug_artifacts"
 

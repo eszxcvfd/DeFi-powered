@@ -16,6 +16,7 @@ from livelead.infrastructure.observability.hooks import register_observability_h
 from livelead.infrastructure.queue.broker import ping_redis
 from livelead.interfaces.rest.admin_connectors import router as admin_connectors_router
 from livelead.interfaces.rest.browser_profiles import router as browser_profiles_router
+from livelead.interfaces.rest.cloakbrowser_policy import router as cloakbrowser_policy_router
 from livelead.interfaces.rest.browser_sessions import router as browser_sessions_router
 from livelead.interfaces.rest.campaign_sources import router as campaign_sources_router
 from livelead.interfaces.rest.campaigns import router as campaigns_router
@@ -81,6 +82,7 @@ def create_app() -> FastAPI:
     app.include_router(reports_router)
     app.include_router(browser_sessions_router)
     app.include_router(browser_profiles_router)
+    app.include_router(cloakbrowser_policy_router)
     return app
 
 
