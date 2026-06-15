@@ -81,6 +81,50 @@ class AppSettings(BaseSettings):
         default=False,
         description="If true, discovery uses deterministic mock sources (tests only)",
     )
+    auth_session_ttl_seconds: int = Field(
+        default=8 * 60 * 60,
+        description="Default session lifetime in seconds (US-027)",
+    )
+    auth_cookie_secure: bool = Field(
+        default=False,
+        description="Set the Secure flag on the session cookie (enable behind TLS)",
+    )
+    auth_allow_dev_headers: bool = Field(
+        default=True,
+        description=(
+            "Allow the legacy X-Organization-Id / X-Actor-Role fallback when "
+            "no session is present. Tests and e2e keep this on; production "
+            "should turn it off (US-027)."
+        ),
+    )
+    auth_default_owner_email: str = Field(
+        default="owner@example.com",
+        description="Bootstrap owner email (US-027).",
+    )
+    auth_default_owner_password: str = Field(
+        default="Owner-Pass-2026",
+        description="Bootstrap owner password (US-027).",
+    )
+    auth_default_owner_name: str = Field(
+        default="LiveLead Owner",
+        description="Bootstrap owner display name (US-027).",
+    )
+    auth_default_organization_id: str = Field(
+        default="00000000-0000-4000-8000-000000000001",
+        description="Organization used by the bootstrap owner (US-027).",
+    )
+    auth_rate_limit_threshold: int = Field(
+        default=5,
+        description="Failed login attempts per window before lockout (US-027).",
+    )
+    auth_rate_limit_window_seconds: int = Field(
+        default=60,
+        description="Sliding window in seconds for the login rate limiter (US-027).",
+    )
+    auth_rate_limit_lockout_seconds: int = Field(
+        default=15 * 60,
+        description="Lockout duration in seconds for the login rate limiter (US-027).",
+    )
 
     @property
     def database_url(self) -> str:

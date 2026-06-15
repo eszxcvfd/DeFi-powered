@@ -6,6 +6,8 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from sqlalchemy import text
 
+from livelead.application.auth import AuthService
+from livelead.domain.identity import LoginRateLimiter
 from livelead.infrastructure.db.models import Base
 from livelead.infrastructure.db.session import (
     create_engine,
@@ -14,7 +16,14 @@ from livelead.infrastructure.db.session import (
 )
 from livelead.infrastructure.observability.hooks import register_observability_hooks
 from livelead.infrastructure.queue.broker import ping_redis
+from livelead.interfaces.auth.tenant_context import configure_auth_boundary
 from livelead.interfaces.rest.admin_connectors import router as admin_connectors_router
+from livelead.interfaces.rest.audit_log import router as audit_log_router
+from livelead.interfaces.rest.auth import router as auth_router
+from livelead.interfaces.rest.member_management import (
+    invite_router as member_invitations_router,
+    router as member_management_router,
+)
 from livelead.interfaces.rest.browser_profiles import router as browser_profiles_router
 from livelead.interfaces.rest.cloakbrowser_policy import router as cloakbrowser_policy_router
 from livelead.interfaces.rest.browser_sessions import router as browser_sessions_router
@@ -60,6 +69,38 @@ async def lifespan(app: FastAPI):
     except Exception:
         app.state.sqlite_ok = False
     app.state.redis_ok = ping_redis(settings)
+    # US-027 — auth boundary wiring
+    configure_auth_boundary(allow_dev_headers=settings.auth_allow_dev_headers)
+    app.state.auth_rate_limiter = LoginRateLimiter(
+        threshold=settings.auth_rate_limit_threshold,
+        window_seconds=float(settings.auth_rate_limit_window_seconds),
+        lockout_seconds=float(settings.auth_rate_limit_lockout_seconds),
+    )
+    app.state.auth_service_factory = None  # populated by get_tenant_context via dependency
+
+    from livelead.interfaces.auth.session_resolver import _RequestSessionProxy
+
+    app.state.auth_service_factory = _RequestSessionProxy(app)
+
+    # US-027 — bootstrap a default owner on a fresh install so a developer
+    # can sign in without a separate CLI step. The bootstrap is a no-op once
+    # at least one user exists in the workspace.
+    try:
+        from uuid import UUID
+
+        from livelead.interfaces.auth.tenant_context import DEV_ORGANIZATION_ID
+
+        org_id = UUID(settings.auth_default_organization_id) if settings.auth_default_organization_id else DEV_ORGANIZATION_ID
+        async with app.state.session_factory() as sess:
+            await AuthService(sess).ensure_default_owner(
+                email=settings.auth_default_owner_email,
+                password=settings.auth_default_owner_password,
+                display_name=settings.auth_default_owner_name,
+                organization_id=org_id,
+            )
+    except Exception as exc:
+        logging.getLogger("livelead.api").warning("default owner bootstrap skipped: %s", exc)
+
     yield
     await engine.dispose()
 
@@ -69,6 +110,7 @@ def create_app() -> FastAPI:
     register_observability_hooks(app)
     app.add_middleware(RequestLoggingMiddleware)
     app.include_router(health_router)
+    app.include_router(auth_router)
     app.include_router(campaign_sources_router)
     app.include_router(campaigns_router)
     app.include_router(admin_connectors_router)
@@ -83,6 +125,9 @@ def create_app() -> FastAPI:
     app.include_router(browser_sessions_router)
     app.include_router(browser_profiles_router)
     app.include_router(cloakbrowser_policy_router)
+    app.include_router(audit_log_router)
+    app.include_router(member_management_router)
+    app.include_router(member_invitations_router)
     return app
 
 

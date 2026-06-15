@@ -1,10 +1,17 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from livelead.application.audit.audit_service import AuditService, make_actor_from_role
 from livelead.application.content.service import ContentService
+from livelead.domain.audit.enums import (
+    AuditAction,
+    AuditOutcome,
+    AuditTargetType,
+)
+from livelead.domain.audit.model import AuditTarget
 from livelead.domain.content.handoff import may_handoff_content
 from livelead.domain.content.review import is_ready_for_later_use
 from livelead.interfaces.auth.tenant_context import TenantContext, get_tenant_context
@@ -23,8 +30,40 @@ from livelead.interfaces.rest.content_schemas import (
     ContentSubmitReviewSchema,
 )
 from livelead.interfaces.rest.deps import get_db_session
+from livelead.interfaces.rest.request_context import capture_request_context
 
 router = APIRouter(tags=["content"])
+
+
+async def _record_audit(
+    session: AsyncSession,
+    tenant: TenantContext,
+    request: Request,
+    *,
+    action: AuditAction,
+    target_id: str,
+    target_display: str,
+    outcome: AuditOutcome,
+    workflow: str,
+    metadata: dict | None = None,
+) -> None:
+    try:
+        await AuditService(session).emit(
+            organization_id=tenant.organization_id,
+            actor=make_actor_from_role(tenant.actor_role),
+            action=action,
+            target=AuditTarget(
+                target_type=AuditTargetType.CONTENT_DRAFT,
+                target_id=target_id,
+                display=target_display,
+            ),
+            outcome=outcome,
+            context=capture_request_context(request, workflow=workflow),
+            metadata=metadata,
+        )
+    except Exception:
+        # Audit must never block the originating workflow.
+        pass
 
 
 def _draft_detail(
@@ -195,6 +234,7 @@ async def submit_for_review(
     event_id: UUID,
     draft_id: UUID,
     body: ContentSubmitReviewSchema,
+    request: Request,
     tenant: TenantContext = Depends(get_tenant_context),
     session: AsyncSession = Depends(get_db_session),
 ):
@@ -211,6 +251,17 @@ async def submit_for_review(
         raise HTTPException(status_code=400, detail="invalid review transition") from None
     if not updated:
         raise HTTPException(status_code=404, detail="draft not found")
+    await _record_audit(
+        session,
+        tenant,
+        request,
+        action=AuditAction.CONTENT_SUBMITTED_FOR_REVIEW,
+        target_id=str(draft_id),
+        target_display=f"draft {draft_id}",
+        outcome=AuditOutcome.SUCCEEDED,
+        workflow="content.review.submit",
+        metadata={"event_id": str(event_id), "assignee": body.assignee},
+    )
     await session.commit()
     return await _detail_with_history(svc, updated)
 
@@ -219,6 +270,7 @@ async def submit_for_review(
 async def approve_content(
     draft_id: UUID,
     body: ContentReviewActionSchema,
+    request: Request,
     tenant: TenantContext = Depends(get_tenant_context),
     session: AsyncSession = Depends(get_db_session),
 ):
@@ -233,11 +285,33 @@ async def approve_content(
             note=body.note,
         )
     except PermissionError:
+        await _record_audit(
+            session,
+            tenant,
+            request,
+            action=AuditAction.CONTENT_APPROVED,
+            target_id=str(draft_id),
+            target_display=f"draft {draft_id}",
+            outcome=AuditOutcome.DENIED,
+            workflow="content.review.approve",
+            metadata={"event_id": str(body.event_id), "reason": "role cannot approve"},
+        )
         raise HTTPException(status_code=403, detail="role cannot approve content") from None
     except ValueError:
         raise HTTPException(status_code=400, detail="invalid review transition") from None
     if not updated:
         raise HTTPException(status_code=404, detail="draft not found")
+    await _record_audit(
+        session,
+        tenant,
+        request,
+        action=AuditAction.CONTENT_APPROVED,
+        target_id=str(draft_id),
+        target_display=f"draft {draft_id}",
+        outcome=AuditOutcome.SUCCEEDED,
+        workflow="content.review.approve",
+        metadata={"event_id": str(body.event_id), "actor": body.actor},
+    )
     await session.commit()
     return await _detail_with_history(svc, updated)
 
@@ -246,6 +320,7 @@ async def approve_content(
 async def reject_content(
     draft_id: UUID,
     body: ContentReviewActionSchema,
+    request: Request,
     tenant: TenantContext = Depends(get_tenant_context),
     session: AsyncSession = Depends(get_db_session),
 ):
@@ -260,11 +335,33 @@ async def reject_content(
             note=body.note,
         )
     except PermissionError:
+        await _record_audit(
+            session,
+            tenant,
+            request,
+            action=AuditAction.CONTENT_REJECTED,
+            target_id=str(draft_id),
+            target_display=f"draft {draft_id}",
+            outcome=AuditOutcome.DENIED,
+            workflow="content.review.reject",
+            metadata={"event_id": str(body.event_id), "reason": "role cannot reject"},
+        )
         raise HTTPException(status_code=403, detail="role cannot reject content") from None
     except ValueError:
         raise HTTPException(status_code=400, detail="invalid review transition") from None
     if not updated:
         raise HTTPException(status_code=404, detail="draft not found")
+    await _record_audit(
+        session,
+        tenant,
+        request,
+        action=AuditAction.CONTENT_REJECTED,
+        target_id=str(draft_id),
+        target_display=f"draft {draft_id}",
+        outcome=AuditOutcome.SUCCEEDED,
+        workflow="content.review.reject",
+        metadata={"event_id": str(body.event_id), "actor": body.actor},
+    )
     await session.commit()
     return await _detail_with_history(svc, updated)
 

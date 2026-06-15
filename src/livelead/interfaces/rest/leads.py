@@ -1,12 +1,19 @@
 from datetime import date
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from livelead.application.audit.audit_service import AuditService, make_actor_from_role
 from livelead.application.content.service import ContentService
 from livelead.application.leads.service import CreateLeadInput, LeadService
 from livelead.application.reminders.service import ReminderService
+from livelead.domain.audit.enums import (
+    AuditAction,
+    AuditOutcome,
+    AuditTargetType,
+)
+from livelead.domain.audit.model import AuditTarget
 from livelead.domain.leads.models import LeadOriginKind, LeadStage
 from livelead.domain.leads.outcomes import parse_outcome_type
 from livelead.interfaces.auth.tenant_context import TenantContext, get_tenant_context
@@ -21,8 +28,40 @@ from livelead.interfaces.rest.leads_schemas import (
     LeadSummarySchema,
     RecordLeadOutcomeSchema,
 )
+from livelead.interfaces.rest.request_context import capture_request_context
 
 router = APIRouter(tags=["leads"])
+
+
+async def _record_audit(
+    session: AsyncSession,
+    tenant: TenantContext,
+    request: Request,
+    *,
+    action: AuditAction,
+    target_id: str,
+    target_display: str,
+    outcome: AuditOutcome,
+    workflow: str,
+    metadata: dict | None = None,
+) -> None:
+    try:
+        await AuditService(session).emit(
+            organization_id=tenant.organization_id,
+            actor=make_actor_from_role(tenant.actor_role),
+            action=action,
+            target=AuditTarget(
+                target_type=AuditTargetType.LEAD,
+                target_id=target_id,
+                display=target_display,
+            ),
+            outcome=outcome,
+            context=capture_request_context(request, workflow=workflow),
+            metadata=metadata,
+        )
+    except Exception:
+        # Audit must never block the originating workflow.
+        pass
 
 
 async def _reminder_schema(session: AsyncSession, org_id: UUID, lead) -> LeadReminderSummarySchema:
@@ -242,6 +281,7 @@ async def get_lead(
 async def patch_lead(
     lead_id: UUID,
     body: LeadPatchSchema,
+    request: Request,
     tenant: TenantContext = Depends(get_tenant_context),
     session: AsyncSession = Depends(get_db_session),
 ):
@@ -271,6 +311,18 @@ async def patch_lead(
         raise HTTPException(status_code=404, detail="lead not found")
     history = await svc.list_activity(lead_id)
     out = await _lead_detail_response(svc, session, tenant.organization_id, lead, history)
+    if stage is not None and stage.value != out.stage:
+        await _record_audit(
+            session,
+            tenant,
+            request,
+            action=AuditAction.LEAD_STAGE_CHANGED,
+            target_id=str(lead_id),
+            target_display=lead.display_name,
+            outcome=AuditOutcome.SUCCEEDED,
+            workflow="lead.stage",
+            metadata={"stage": out.stage},
+        )
     await session.commit()
     return out
 

@@ -6,10 +6,18 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from livelead.application.audit.audit_service import AuditService, make_actor_from_role
 from livelead.application.cloakbrowser.policy_service import CloakBrowserPolicyService
+from livelead.domain.audit.enums import (
+    AuditAction,
+    AuditOutcome,
+    AuditTargetType,
+)
+from livelead.domain.audit.model import AuditTarget
 from livelead.interfaces.auth.tenant_context import TenantContext, get_tenant_context
 from livelead.interfaces.rest.admin_connectors import require_admin
 from livelead.interfaces.rest.deps import get_db_session
+from livelead.interfaces.rest.request_context import capture_request_context
 
 router = APIRouter(prefix="/admin/cloakbrowser-policy", tags=["cloakbrowser-policy"])
 
@@ -30,6 +38,37 @@ class CloakBrowserKillSwitchSchema(BaseModel):
 
 def _svc(request: Request, session: AsyncSession) -> CloakBrowserPolicyService:
     return CloakBrowserPolicyService(session, request.app.state.settings)
+
+
+async def _record_audit(
+    session: AsyncSession,
+    tenant: TenantContext,
+    request: Request,
+    *,
+    action: AuditAction,
+    target_id: str,
+    target_display: str,
+    outcome: AuditOutcome,
+    workflow: str,
+    metadata: dict | None = None,
+) -> None:
+    try:
+        await AuditService(session).emit(
+            organization_id=tenant.organization_id,
+            actor=make_actor_from_role(tenant.actor_role),
+            action=action,
+            target=AuditTarget(
+                target_type=AuditTargetType.CLOAKBROWSER_POLICY,
+                target_id=target_id,
+                display=target_display,
+            ),
+            outcome=outcome,
+            context=capture_request_context(request, workflow=workflow),
+            metadata=metadata,
+        )
+    except Exception:
+        # Audit must never block the originating workflow.
+        pass
 
 
 @router.get("/runtime")
@@ -59,7 +98,19 @@ async def set_kill_switch(
 ):
     if tenant.actor_role not in ("admin", "owner"):
         raise HTTPException(status_code=403, detail="admin role required")
+    previous = bool(request.app.state.settings.cloakbrowser_kill_switch)
     request.app.state.settings.cloakbrowser_kill_switch = body.active
+    await _record_audit(
+        session,
+        tenant,
+        request,
+        action=AuditAction.CLOAKBROWSER_KILL_SWITCH,
+        target_id="global",
+        target_display="global kill-switch",
+        outcome=AuditOutcome.SUCCEEDED,
+        workflow="cloakbrowser.kill_switch",
+        metadata={"previous": previous, "active": body.active},
+    )
     await session.commit()
     return {"kill_switch_active": body.active}
 
@@ -103,6 +154,17 @@ async def request_cloakbrowser(
     except LookupError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     view["kill_switch_active"] = bool(request.app.state.settings.cloakbrowser_kill_switch)
+    await _record_audit(
+        session,
+        tenant,
+        request,
+        action=AuditAction.CLOAKBROWSER_REQUESTED,
+        target_id=str(source_id),
+        target_display=view.get("source_name", str(source_id)),
+        outcome=AuditOutcome.SUCCEEDED,
+        workflow="cloakbrowser.request",
+        metadata={"pinned_version": body.pinned_version, "policy_state": view.get("policy_state")},
+    )
     await session.commit()
     return view
 
@@ -121,8 +183,30 @@ async def approve_owner_admin(
     except LookupError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     except PermissionError as exc:
+        await _record_audit(
+            session,
+            tenant,
+            request,
+            action=AuditAction.CLOAKBROWSER_OWNER_APPROVED,
+            target_id=str(source_id),
+            target_display=str(source_id),
+            outcome=AuditOutcome.DENIED,
+            workflow="cloakbrowser.approve_owner",
+            metadata={"reason": str(exc)},
+        )
         raise HTTPException(status_code=403, detail=str(exc)) from exc
     view["kill_switch_active"] = bool(request.app.state.settings.cloakbrowser_kill_switch)
+    await _record_audit(
+        session,
+        tenant,
+        request,
+        action=AuditAction.CLOAKBROWSER_OWNER_APPROVED,
+        target_id=str(source_id),
+        target_display=view.get("source_name", str(source_id)),
+        outcome=AuditOutcome.SUCCEEDED,
+        workflow="cloakbrowser.approve_owner",
+        metadata={"policy_state": view.get("policy_state")},
+    )
     await session.commit()
     return view
 
@@ -142,8 +226,30 @@ async def approve_compliance(
     except LookupError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     except PermissionError as exc:
+        await _record_audit(
+            session,
+            tenant,
+            request,
+            action=AuditAction.CLOAKBROWSER_COMPLIANCE_APPROVED,
+            target_id=str(source_id),
+            target_display=str(source_id),
+            outcome=AuditOutcome.DENIED,
+            workflow="cloakbrowser.approve_compliance",
+            metadata={"reason": str(exc)},
+        )
         raise HTTPException(status_code=403, detail=str(exc)) from exc
     view["kill_switch_active"] = bool(request.app.state.settings.cloakbrowser_kill_switch)
+    await _record_audit(
+        session,
+        tenant,
+        request,
+        action=AuditAction.CLOAKBROWSER_COMPLIANCE_APPROVED,
+        target_id=str(source_id),
+        target_display=view.get("source_name", str(source_id)),
+        outcome=AuditOutcome.SUCCEEDED,
+        workflow="cloakbrowser.approve_compliance",
+        metadata={"policy_state": view.get("policy_state")},
+    )
     await session.commit()
     return view
 
@@ -168,7 +274,29 @@ async def revoke_cloakbrowser(
     except LookupError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     except PermissionError as exc:
+        await _record_audit(
+            session,
+            tenant,
+            request,
+            action=AuditAction.CLOAKBROWSER_REVOKED,
+            target_id=str(source_id),
+            target_display=str(source_id),
+            outcome=AuditOutcome.DENIED,
+            workflow="cloakbrowser.revoke",
+            metadata={"reason": str(exc)},
+        )
         raise HTTPException(status_code=403, detail=str(exc)) from exc
     view["kill_switch_active"] = bool(request.app.state.settings.cloakbrowser_kill_switch)
+    await _record_audit(
+        session,
+        tenant,
+        request,
+        action=AuditAction.CLOAKBROWSER_REVOKED,
+        target_id=str(source_id),
+        target_display=view.get("source_name", str(source_id)),
+        outcome=AuditOutcome.SUCCEEDED,
+        workflow="cloakbrowser.revoke",
+        metadata={"policy_state": view.get("policy_state"), "reason": body.reason},
+    )
     await session.commit()
     return view

@@ -9,6 +9,7 @@ from fastapi.responses import Response, StreamingResponse
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from livelead.application.audit.audit_service import AuditService, make_actor_from_role
 from livelead.application.browser.debug_artifacts import BrowserDebugArtifactService
 from livelead.application.browser.profiles import BrowserProfileService, ProfileBlocked
 from livelead.application.browser.service import (
@@ -16,13 +17,51 @@ from livelead.application.browser.service import (
     InvalidLaunchContext,
     session_status_view,
 )
+from livelead.domain.audit.enums import (
+    AuditAction,
+    AuditOutcome,
+    AuditTargetType,
+)
+from livelead.domain.audit.model import AuditTarget
 from livelead.infrastructure.secrets.vault import SecretVault
 from livelead.domain.browser.actions import BrowserActionType
 from livelead.domain.browser.policy import BrowserLaunchDenied
 from livelead.interfaces.auth.tenant_context import TenantContext, get_tenant_context
 from livelead.interfaces.rest.deps import get_db_session
+from livelead.interfaces.rest.request_context import capture_request_context
 
 router = APIRouter(prefix="/browser-sessions", tags=["browser-sessions"])
+
+
+async def _record_audit(
+    session: AsyncSession,
+    tenant: TenantContext,
+    request: Request,
+    *,
+    action: AuditAction,
+    target_id: str,
+    target_display: str,
+    outcome: AuditOutcome,
+    workflow: str,
+    metadata: dict | None = None,
+) -> None:
+    try:
+        await AuditService(session).emit(
+            organization_id=tenant.organization_id,
+            actor=make_actor_from_role(tenant.actor_role),
+            action=action,
+            target=AuditTarget(
+                target_type=AuditTargetType.BROWSER_CONFIRMATION,
+                target_id=target_id,
+                display=target_display,
+            ),
+            outcome=outcome,
+            context=capture_request_context(request, workflow=workflow),
+            metadata=metadata,
+        )
+    except Exception:
+        # Audit must never block the originating workflow.
+        pass
 
 
 class BrowserSessionCreateSchema(BaseModel):
@@ -147,12 +186,34 @@ async def create_browser_session(
                 detail="provide event_id or (source_id and initial_url)",
             )
     except ProfileBlocked as exc:
+        await _record_audit(
+            session,
+            tenant,
+            request,
+            action=AuditAction.BROWSER_LAUNCH_DENIED,
+            target_id=str(body.browser_profile_id or ""),
+            target_display="browser-profile",
+            outcome=AuditOutcome.DENIED,
+            workflow="browser.launch",
+            metadata={"reasons": list(exc.reasons)},
+        )
         raise HTTPException(
             status_code=409, detail={"profile_blocked": list(exc.reasons)}
         ) from exc
     except InvalidLaunchContext as exc:
         raise HTTPException(status_code=400, detail={"launch_errors": list(exc.errors)}) from exc
     except BrowserLaunchDenied as exc:
+        await _record_audit(
+            session,
+            tenant,
+            request,
+            action=AuditAction.BROWSER_LAUNCH_DENIED,
+            target_id=str(body.source_id or body.event_id or "unknown"),
+            target_display="browser-session",
+            outcome=AuditOutcome.DENIED,
+            workflow="browser.launch",
+            metadata={"reasons": list(exc.reasons)},
+        )
         raise HTTPException(status_code=409, detail={"policy_denied": list(exc.reasons)}) from exc
     except LookupError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
@@ -229,6 +290,7 @@ async def stop_browser_session(
 async def confirm_browser_action(
     session_id: UUID,
     confirmation_id: UUID,
+    request: Request,
     tenant: TenantContext = Depends(get_tenant_context),
     session: AsyncSession = Depends(get_db_session),
 ):
@@ -244,6 +306,17 @@ async def confirm_browser_action(
         )
     except LookupError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
+    await _record_audit(
+        session,
+        tenant,
+        request,
+        action=AuditAction.BROWSER_CONFIRMATION_CONFIRMED,
+        target_id=str(confirmation_id),
+        target_display=f"confirmation {confirmation_id}",
+        outcome=AuditOutcome.SUCCEEDED,
+        workflow="browser.confirmation.confirm",
+        metadata={"lifecycle": result.get("lifecycle", "")},
+    )
     await session.commit()
     return BrowserActionResultSchema(**result)
 
@@ -252,6 +325,7 @@ async def confirm_browser_action(
 async def cancel_browser_action(
     session_id: UUID,
     confirmation_id: UUID,
+    request: Request,
     tenant: TenantContext = Depends(get_tenant_context),
     session: AsyncSession = Depends(get_db_session),
 ):
@@ -267,6 +341,17 @@ async def cancel_browser_action(
         )
     except LookupError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
+    await _record_audit(
+        session,
+        tenant,
+        request,
+        action=AuditAction.BROWSER_CONFIRMATION_CANCELLED,
+        target_id=str(confirmation_id),
+        target_display=f"confirmation {confirmation_id}",
+        outcome=AuditOutcome.SUCCEEDED,
+        workflow="browser.confirmation.cancel",
+        metadata={"lifecycle": result.get("lifecycle", "")},
+    )
     await session.commit()
     return BrowserActionResultSchema(**result)
 

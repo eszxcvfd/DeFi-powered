@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from livelead.domain.identity import can_access_admin_connector
 from livelead.domain.sources.models import (
     AccessMode,
     AuthenticationMode,
@@ -25,7 +26,7 @@ router = APIRouter(prefix="/admin/connectors", tags=["admin-connectors"])
 
 
 def require_admin(ctx: TenantContext) -> None:
-    if ctx.actor_role not in ("admin", "owner"):
+    if not can_access_admin_connector(ctx.role):
         raise HTTPException(status_code=403, detail="admin role required")
 
 
