@@ -48,8 +48,13 @@ from livelead.domain.browser.models import (
     LaunchContextKind,
 )
 from livelead.domain.browser.policy import BrowserLaunchDenied, evaluate_browser_launch
+from livelead.application.cloakbrowser.policy_service import (
+    CloakBrowserPolicyBlocked,
+    CloakBrowserPolicyService,
+)
 from livelead.domain.events.source_url_utils import pick_browser_launch_url
 from livelead.domain.sources.policy import evaluate_source_policy
+from livelead.runtime.settings import AppSettings, parse_settings
 from livelead.infrastructure.browser.adapter import (
     execute_confirmation_gated_action,
     execute_read_only_action,
@@ -78,8 +83,9 @@ class InvalidLaunchContext(Exception):
 
 
 class BrowserSessionService:
-    def __init__(self, session: AsyncSession) -> None:
+    def __init__(self, session: AsyncSession, settings: AppSettings | None = None) -> None:
         self._session = session
+        self._settings = settings or parse_settings()
         self._repo = BrowserSessionRepository(session)
         self._events = EventRepository(session)
         self._sources = SourceRepository(session)
@@ -232,6 +238,22 @@ class BrowserSessionService:
             raise InvalidLaunchContext(("source_not_found",))
         source = row_to_source(src_row)
         decision = evaluate_source_policy(source)
+        try:
+            cloak_svc = CloakBrowserPolicyService(self._session, self._settings)
+            await cloak_svc.assert_launch_allowed(
+                organization_id,
+                target.source_id,
+                source.automation_engine,
+            )
+        except CloakBrowserPolicyBlocked as exc:
+            logger.info(
+                "browser_session cloakbrowser_denied org=%s source=%s actor=%s reasons=%s",
+                organization_id,
+                target.source_id,
+                actor,
+                exc.reasons,
+            )
+            raise BrowserLaunchDenied(exc.reasons) from exc
         try:
             engine, _ = evaluate_browser_launch(
                 source,

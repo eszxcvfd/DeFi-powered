@@ -107,7 +107,7 @@ async def create_browser_session(
 ):
     if tenant.actor_role not in ("analyst", "admin", "owner"):
         raise HTTPException(status_code=403, detail="role cannot open browser sessions")
-    svc = BrowserSessionService(session)
+    svc = BrowserSessionService(session, request.app.state.settings)
     profile_svc = BrowserProfileService(session, SecretVault(request.app.state.settings.secret_master_key))
     isolation_key: str | None = None
     profile_boundary: str | None = None
@@ -377,7 +377,7 @@ async def stream_browser_session(
         last_state = None
         for _ in range(80):
             async with factory() as sess:
-                svc = BrowserSessionService(sess)
+                svc = BrowserSessionService(sess, request.app.state.settings)
                 record = await svc.get_status(session_id, tenant.organization_id)
                 if not record:
                     yield 'data: {"type":"browser.error","detail":"not_found"}\n\n'
