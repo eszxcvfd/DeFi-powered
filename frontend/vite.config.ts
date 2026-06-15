@@ -57,21 +57,39 @@ function eventsProxyBypass(req: { method?: string; url?: string; headers?: Recor
 
 function adminProxyBypass(req: { method?: string; url?: string; headers?: Record<string, string> }) {
   const path = (req.url ?? "").split("?")[0];
-  if (path === "/admin" || path === "/admin/connectors" || path === "/admin/browser-profiles") {
+  if (
+    path === "/admin" ||
+    path === "/admin/connectors" ||
+    path === "/admin/browser-profiles" ||
+    path === "/admin/members" ||
+    path === "/admin/audit-log"
+  ) {
     if (req.method === "GET" && wantsHtml(req)) return path;
     return null;
   }
   if (path.startsWith("/admin/browser-profiles/")) return null;
+  if (path.startsWith("/admin/members/")) return null;
   if (path.startsWith("/admin/cloakbrowser-policy")) return null;
+  if (path.startsWith("/admin/audit-logs")) return null;
   if (ADMIN_CONNECTOR_ID.test(path)) return null;
   return path;
 }
 
 const proxyConfig = {
   "/health": API,
+  "/auth": {
+    target: API,
+    bypass(req: { method?: string; url?: string; headers?: Record<string, string> }) {
+      const path = (req.url ?? "").split("?")[0];
+      if (path === "/sign-in" && req.method === "GET" && wantsHtml(req)) return path;
+      if (path.startsWith("/auth/")) return null;
+      return path;
+    },
+  },
   "/discovery-jobs": { target: API, bypass: discoveryProxyBypass },
   "/events": { target: API, bypass: eventsProxyBypass },
   "/admin": { target: API, bypass: adminProxyBypass },
+  "/admin/members": API,
   "/campaigns": { target: API, bypass: campaignsProxyBypass },
   "/content": API,
   "/reporting": API,

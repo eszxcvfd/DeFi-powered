@@ -101,6 +101,14 @@ export default function AdminConnectors() {
             <Link to="/admin/browser-profiles" className="underline text-slate-600" data-testid="nav-browser-profiles">
               Browser profiles
             </Link>
+            <span className="text-slate-300">|</span>
+            <Link to="/admin/members" className="underline text-slate-600" data-testid="nav-members">
+              Members & invitations
+            </Link>
+            <span className="text-slate-300">|</span>
+            <Link to="/admin/audit-log" className="underline text-slate-600" data-testid="nav-audit-log">
+              Audit log
+            </Link>
             <Settings2 className="size-4 text-slate-400 inline" />
           </span>
         }
