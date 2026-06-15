@@ -77,15 +77,22 @@ def upcoming_event_window(
 
     The first slice flags events that start within ``lead_minutes``
     from ``now`` and have not started yet. Events with no trustworthy
-    start time are never flagged.
+    start time are never flagged. Naive datetimes are interpreted as
+    UTC, which is the convention used by the SQLite / SQLAlchemy
+    timestamps in this repo.
     """
 
     if event_starts_at is None:
         return False
     ref = now or datetime.now(UTC)
-    if event_starts_at <= ref:
+    starts_at = event_starts_at
+    if starts_at.tzinfo is None:
+        starts_at = starts_at.replace(tzinfo=UTC)
+    if ref.tzinfo is None:
+        ref = ref.replace(tzinfo=UTC)
+    if starts_at <= ref:
         return False
-    return event_starts_at - ref <= timedelta(minutes=lead_minutes)
+    return starts_at - ref <= timedelta(minutes=lead_minutes)
 
 
 def summarize_candidate(candidate: NotificationCandidate) -> tuple[str, str, str]:

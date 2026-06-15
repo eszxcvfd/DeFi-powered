@@ -19,6 +19,8 @@ import SourcePerformancePage from "./pages/SourcePerformancePage";
 import BrowserSessionPage from "./pages/BrowserSessionPage";
 import EventsInboxPage from "./pages/EventsInboxPage";
 import LeadsPipelinePage from "./pages/LeadsPipelinePage";
+import NotificationInboxPage from "./pages/NotificationInboxPage";
+import NotificationPreferencesPage from "./pages/NotificationPreferencesPage";
 import SignInPage from "./pages/SignInPage";
 import { AuthProvider, useAuth } from "./components/AuthProvider";
 
@@ -77,6 +79,8 @@ export default function App() {
           <Route path="admin/browser-profiles" element={<AdminBrowserProfiles />} />
           <Route path="admin/members" element={<AdminMembers />} />
           <Route path="admin/audit-log" element={<AdminAuditLog />} />
+          <Route path="notifications" element={<NotificationInboxPage />} />
+          <Route path="notification-preferences" element={<NotificationPreferencesPage />} />
         </Route>
         <Route path="/invitations/accept" element={<AcceptInvitationPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />

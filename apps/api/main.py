@@ -24,6 +24,7 @@ from livelead.interfaces.rest.member_management import (
     invite_router as member_invitations_router,
     router as member_management_router,
 )
+from livelead.interfaces.rest.notifications import router as notifications_router
 from livelead.interfaces.rest.browser_profiles import router as browser_profiles_router
 from livelead.interfaces.rest.cloakbrowser_policy import router as cloakbrowser_policy_router
 from livelead.interfaces.rest.browser_sessions import router as browser_sessions_router
@@ -128,6 +129,7 @@ def create_app() -> FastAPI:
     app.include_router(audit_log_router)
     app.include_router(member_management_router)
     app.include_router(member_invitations_router)
+    app.include_router(notifications_router)
     return app
 
 

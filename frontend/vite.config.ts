@@ -71,6 +71,7 @@ function adminProxyBypass(req: { method?: string; url?: string; headers?: Record
   if (path.startsWith("/admin/members/")) return null;
   if (path.startsWith("/admin/cloakbrowser-policy")) return null;
   if (path.startsWith("/admin/audit-logs")) return null;
+  if (path.startsWith("/admin/notifications")) return null;
   if (ADMIN_CONNECTOR_ID.test(path)) return null;
   return path;
 }
@@ -90,6 +91,19 @@ const proxyConfig = {
   "/events": { target: API, bypass: eventsProxyBypass },
   "/admin": { target: API, bypass: adminProxyBypass },
   "/admin/members": API,
+  "/notifications": {
+    target: API,
+    bypass(req: { method?: string; url?: string; headers?: Record<string, string> }) {
+      const path = (req.url ?? "").split("?")[0];
+      if (path === "/notifications" && req.method === "GET" && wantsHtml(req)) return path;
+      if (path === "/notifications/notification-preferences" && req.method === "GET" && wantsHtml(req)) return path;
+      if (path.startsWith("/notifications/")) return null;
+      if (path === "/notification-preferences" && req.method === "GET" && wantsHtml(req)) return path;
+      if (path.startsWith("/notification-preferences/")) return null;
+      return null;
+    },
+  },
+  "/notification-preferences": API,
   "/campaigns": { target: API, bypass: campaignsProxyBypass },
   "/content": API,
   "/reporting": API,
