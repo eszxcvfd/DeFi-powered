@@ -454,3 +454,213 @@ class BrowserActionConfirmationRow(Base):
     execution_lifecycle: Mapped[str | None] = mapped_column(String(32), nullable=True)
     execution_summary: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class AuditEntryRow(Base):
+    """Append-only audit log row (US-026).
+
+    Application point of view: rows are never updated or deleted by the product
+    code. The table is tenant-scoped on organization_id and indexed for the
+    most common governance filters: actor, action, target, result, and time.
+    """
+
+    __tablename__ = "audit_entries"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    organization_id: Mapped[str] = mapped_column(String(36), index=True, nullable=False)
+    actor_id: Mapped[str] = mapped_column(String(128), index=True, nullable=False)
+    actor_type: Mapped[str] = mapped_column(String(16), index=True, nullable=False)
+    actor_role: Mapped[str] = mapped_column(String(64), default="", index=True)
+    action: Mapped[str] = mapped_column(String(96), index=True, nullable=False)
+    action_family: Mapped[str] = mapped_column(String(48), index=True, nullable=False)
+    target_type: Mapped[str] = mapped_column(String(48), index=True, nullable=False)
+    target_id: Mapped[str] = mapped_column(String(96), index=True, nullable=False)
+    target_display: Mapped[str] = mapped_column(String(300), default="")
+    outcome: Mapped[str] = mapped_column(String(24), index=True, nullable=False)
+    occurred_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), index=True, nullable=False
+    )
+    request_id: Mapped[str] = mapped_column(String(64), default="", index=True)
+    session_id: Mapped[str] = mapped_column(String(64), default="")
+    correlation_id: Mapped[str] = mapped_column(String(64), default="")
+    client_ip: Mapped[str] = mapped_column(String(64), default="")
+    user_agent: Mapped[str] = mapped_column(String(300), default="")
+    workflow: Mapped[str] = mapped_column(String(64), default="")
+    metadata_json: Mapped[str] = mapped_column(Text, default="{}")
+    metadata_redacted: Mapped[bool] = mapped_column(Boolean, default=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class UserRow(Base):
+    """Durable user identity (US-027)."""
+
+    __tablename__ = "users"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    email: Mapped[str] = mapped_column(String(320), nullable=False)
+    email_hash: Mapped[str] = mapped_column(String(64), nullable=False, unique=True, index=True)
+    display_name: Mapped[str] = mapped_column(String(200), default="")
+    password_hash: Mapped[str] = mapped_column(String(256), nullable=False)
+    password_salt: Mapped[str] = mapped_column(String(64), nullable=False)
+    password_iterations: Mapped[int] = mapped_column(Integer, nullable=False, default=200_000)
+    disabled: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
+    failed_attempts: Mapped[int] = mapped_column(Integer, default=0)
+    locked_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    last_login_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+
+class OrganizationMembershipRow(Base):
+    """Link between a user, an organization, and a role (US-027)."""
+
+    __tablename__ = "organization_memberships"
+    __table_args__ = (
+        # SQLite supports unique constraints via UniqueConstraint, but
+        # the inline string variant keeps the migration explicit.
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    user_id: Mapped[str] = mapped_column(String(36), nullable=False, index=True)
+    organization_id: Mapped[str] = mapped_column(String(36), nullable=False, index=True)
+    role: Mapped[str] = mapped_column(String(32), nullable=False)
+    state: Mapped[str] = mapped_column(String(32), nullable=False, default="active", index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+
+class SessionRow(Base):
+    """Server-issued session record (US-027).
+
+    The cleartext session token is never persisted. The token_hash column
+    stores the SHA-256 of the token so a database leak does not yield a
+    usable session.
+    """
+
+    __tablename__ = "sessions"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    user_id: Mapped[str] = mapped_column(String(36), nullable=False, index=True)
+    organization_id: Mapped[str] = mapped_column(String(36), nullable=False, index=True)
+    role: Mapped[str] = mapped_column(String(32), nullable=False)
+    token_hash: Mapped[str] = mapped_column(String(64), nullable=False, unique=True, index=True)
+    issued_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, index=True)
+    last_seen_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    rotated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True, index=True)
+    client_ip: Mapped[str] = mapped_column(String(64), default="")
+    user_agent: Mapped[str] = mapped_column(String(300), default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class MemberInvitationRow(Base):
+    """Pending invitation from an inviter to one email address (US-028).
+
+    Invitations are scoped to one organization, one email, and one
+    intended role. The cleartext token is never persisted; the
+    `token_hash` column stores the SHA-256 of the cleartext token so a
+    database leak does not yield a usable invitation.
+    """
+
+    __tablename__ = "member_invitations"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    organization_id: Mapped[str] = mapped_column(String(36), nullable=False, index=True)
+    email: Mapped[str] = mapped_column(String(320), nullable=False, index=True)
+    role: Mapped[str] = mapped_column(String(32), nullable=False)
+    state: Mapped[str] = mapped_column(String(32), nullable=False, default="pending", index=True)
+    token_hash: Mapped[str] = mapped_column(String(64), nullable=False, unique=True, index=True)
+    invited_by_user_id: Mapped[str | None] = mapped_column(String(36), nullable=True, index=True)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, index=True)
+    accepted_by_user_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    accepted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    revoked_by_user_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    revoke_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+
+class UserNotificationRow(Base):
+    """In-app notification row (US-029).
+
+    Per-user, per-organization, per-source-record in-app alert. The
+    row stores the visible title, summary, and deep-link context. The
+    cleartext email body and provider payloads live in the delivery
+    attempt table, not here.
+    """
+
+    __tablename__ = "user_notifications"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    organization_id: Mapped[str] = mapped_column(String(36), nullable=False, index=True)
+    user_id: Mapped[str] = mapped_column(String(36), nullable=False, index=True)
+    notification_type: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    state: Mapped[str] = mapped_column(String(32), nullable=False, default="unread", index=True)
+    source_record_type: Mapped[str] = mapped_column(String(64), nullable=False)
+    source_record_id: Mapped[str] = mapped_column(String(96), nullable=False, index=True)
+    title: Mapped[str] = mapped_column(String(300), nullable=False)
+    summary: Mapped[str] = mapped_column(Text, default="")
+    deep_link: Mapped[str] = mapped_column(String(1024), default="")
+    read_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    dismissed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), index=True)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+
+class NotificationPreferenceRow(Base):
+    """Per-user, per-type notification preferences (US-029).
+
+    Two boolean columns cover the two channels the first slice ships:
+    in-app and email. Future channels append columns or migrate to a
+    JSON map without changing the existing public contract.
+    """
+
+    __tablename__ = "notification_preferences"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    organization_id: Mapped[str] = mapped_column(String(36), nullable=False, index=True)
+    user_id: Mapped[str] = mapped_column(String(36), nullable=False, index=True)
+    notification_type: Mapped[str] = mapped_column(String(64), nullable=False)
+    in_app_enabled: Mapped[bool] = mapped_column(Boolean, default=True)
+    email_enabled: Mapped[bool] = mapped_column(Boolean, default=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+
+class NotificationDeliveryAttemptRow(Base):
+    """One email-delivery attempt per notification (US-029).
+
+    The row holds the provider correlation ID, status, redacted
+    recipient, subject, and diagnostics. Provider tokens, SMTP
+    secrets, and raw recipient lists are never persisted in this
+    table; only what the audit log and the operator can safely see.
+    """
+
+    __tablename__ = "notification_delivery_attempts"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    organization_id: Mapped[str] = mapped_column(String(36), nullable=False, index=True)
+    user_id: Mapped[str] = mapped_column(String(36), nullable=False, index=True)
+    notification_id: Mapped[str] = mapped_column(String(36), nullable=False, index=True)
+    notification_type: Mapped[str] = mapped_column(String(64), nullable=False)
+    channel: Mapped[str] = mapped_column(String(32), nullable=False)
+    status: Mapped[str] = mapped_column(String(32), nullable=False, index=True)
+    provider: Mapped[str] = mapped_column(String(64), nullable=False)
+    provider_message_id: Mapped[str] = mapped_column(String(200), default="")
+    recipient: Mapped[str] = mapped_column(String(320), default="")
+    subject: Mapped[str] = mapped_column(String(500), default="")
+    diagnostics_json: Mapped[str] = mapped_column(Text, default="{}")
+    attempted_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), index=True)
+
