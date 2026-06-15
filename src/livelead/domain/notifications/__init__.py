@@ -1,0 +1,53 @@
+"""Notification domain — US-029."""
+
+from .models import (
+    DEFAULT_EMAIL_PREFERENCES,
+    DEFAULT_IN_APP_PREFERENCES,
+    DeliveryStatus,
+    NotificationCandidate,
+    NotificationChannel,
+    NotificationDeliveryAttempt,
+    NotificationPreference,
+    NotificationState,
+    NotificationType,
+    SourceRecordType,
+    UserNotification,
+    new_delivery_attempt_id,
+    new_notification_id,
+    new_preference_id,
+)
+from .policy import (
+    default_preference_matrix,
+    derive_inbox_state,
+    is_email_eligible,
+    normalize_preference_payload,
+    should_attempt_email,
+    should_create_in_app,
+    summarize_candidate,
+    upcoming_event_window,
+)
+
+__all__ = [
+    "DEFAULT_EMAIL_PREFERENCES",
+    "DEFAULT_IN_APP_PREFERENCES",
+    "DeliveryStatus",
+    "NotificationCandidate",
+    "NotificationChannel",
+    "NotificationDeliveryAttempt",
+    "NotificationPreference",
+    "NotificationState",
+    "NotificationType",
+    "SourceRecordType",
+    "UserNotification",
+    "default_preference_matrix",
+    "derive_inbox_state",
+    "is_email_eligible",
+    "new_delivery_attempt_id",
+    "new_notification_id",
+    "new_preference_id",
+    "normalize_preference_payload",
+    "should_attempt_email",
+    "should_create_in_app",
+    "summarize_candidate",
+    "upcoming_event_window",
+]
