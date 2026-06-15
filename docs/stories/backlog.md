@@ -5,7 +5,6 @@ specific initiative.
 
 Do not create every possible story packet up front. Create story packets when
 the work is selected or when a product decision needs a durable place to land.
-
 ## Candidate Epics
 
 | Epic | Description | Status |
@@ -93,3 +92,15 @@ the work is selected or when a product decision needs a durable place to land.
 - `US-026-audit-log-baseline`: add the first admin audit-log slice with
   tenant-scoped, append-only, secret-safe action history and governed filters
   before retention-policy, data-deletion, or connector-health stories.
+- `US-027-identity-access-baseline`: replace header-based dev auth with the
+  first authenticated session, tenant membership, backend RBAC, generic login-
+  failure handling, and audit-safe denial flow before member management, email
+  notifications, or SSO federation stories.
+- `US-028-member-management-baseline`: add the first member-governance slice
+  with invitations, invite acceptance, role change, disable/re-enable, revoke
+  access, and last-owner guardrails before email delivery, SCIM, or enterprise
+  SSO administration stories.
+- `US-029-notification-delivery-baseline`: add the first governed notification
+  slice with in-app alerts, email delivery for selected reminder/job/event
+  cases, and per-user notification preferences before watchlist automation,
+  digest scheduling, or external channel integrations.

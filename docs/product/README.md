@@ -15,6 +15,12 @@ actually change.
 - `overview.md`: product summary, principles, roles, and non-goals.
 - `mvp-scope-and-priorities.md`: seven core jobs, guardrails, and priority
   rules.
+- `identity-and-access.md`: login, session, RBAC, and tenant-isolation
+  contract.
+- `member-management-and-access-governance.md`: invitations, role changes,
+  disable/revoke rules, and admin membership governance.
+- `notification-delivery-and-preferences.md`: in-app alerts, email delivery,
+  and per-user notification controls.
 - `campaign-and-icp.md`: campaign input, natural-language brief parsing, ICP,
   target-market mix.
 - `source-registry-and-policy.md`: governed source catalog and channel policy.
