@@ -42,6 +42,8 @@ implemented until tests or validation evidence exist.
 | US-021 | Allowlisted read-only browser actions with selector guardrails, status events, and timeout or budget enforcement | yes | yes | yes | yes | implemented | `./scripts/verify-us-021.sh` |
 | US-022 | Confirmation-gated side-effect browser actions with preview or dry-run, explicit confirm/cancel, and audit context | yes | yes | yes | yes | implemented | `./scripts/verify-us-022.sh` |
 | US-023 | Debug artifacts, screenshot capture, and retention guardrails for supervised browser sessions | yes | yes | yes | yes | implemented | `./scripts/verify-us-023.sh` |
+| US-024 | Governed browser profile lifecycle, consented storage state, and expiry controls | yes | yes | yes | yes | implemented | `./scripts/verify-us-024.sh`; `frontend/e2e/browser-profile-lifecycle.spec.ts` |
+| US-025 | CloakBrowser approval gates, source-scoped enablement, and kill-switch controls | yes | yes | yes | yes | implemented | `./scripts/verify-us-025.sh`; `frontend/e2e/cloakbrowser-policy.spec.ts` |
 
 ## Evidence Rules
 

@@ -14,8 +14,8 @@ the work is selected or when a product decision needs a durable place to land.
 | E01 Discovery MVP | Campaign/ICP, source registry and policy, API/RSS connector, browser adapter contract, discovery job progress, event normalization, deduplication, event list/detail. | active |
 | E02 Intelligence | Event scoring, audience hypothesis, evidence linking, AI provider abstraction, engagement plan, generated content, review workflow, anti-spam guardrails. | active |
 | E03 Lead And Reporting | Lead pipeline, duplicate detection, activities, follow-up reminders, dashboard, funnel, source performance, export. | active |
-| E04 Browser-Assisted Operations | Headed browser session console, profile lifecycle, confirmation workflow, screenshots/traces, optional CloakBrowser adapter review. | active |
-| E05 Hardening | Performance, security, observability, backup/restore, UAT, and production readiness. | unsliced |
+| E04 Browser-Assisted Operations | Supporting browser session governance, confirmation workflow, screenshots/traces, profile lifecycle, and optional CloakBrowser adapter review for permitted-source access. | active |
+| E05 Hardening | Performance, security, observability, backup/restore, UAT, and production readiness. | active |
 
 ## First Story Candidates
 
@@ -87,3 +87,9 @@ the work is selected or when a product decision needs a durable place to land.
   profile lifecycle slice with consented storage-state handling, lock/expire/
   delete controls, and blocked-session reuse rules before CloakBrowser policy
   stories.
+- `US-025-cloakbrowser-policy-baseline`: add the first CloakBrowser governance
+  slice with source-scoped approval gates, runtime provenance checks, and kill-
+  switch controls while keeping the optional engine disabled by default.
+- `US-026-audit-log-baseline`: add the first admin audit-log slice with
+  tenant-scoped, append-only, secret-safe action history and governed filters
+  before retention-policy, data-deletion, or connector-health stories.
