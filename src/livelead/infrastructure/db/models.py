@@ -913,3 +913,256 @@ class NotificationDeliveryAttemptRow(Base):
     diagnostics_json: Mapped[str] = mapped_column(Text, default="{}")
     attempted_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), index=True)
 
+
+
+class BackupSnapshotRow(Base):
+    """Durable backup snapshot metadata (US-040).
+
+    Records one backup execution with its verification lifecycle. The
+    cleartext backup file path, encryption keys, and restore-time
+    diagnostics are never persisted on this row — only what an
+    authorized operator needs to know to evaluate backup freshness
+    and restore eligibility.
+    """
+
+    __tablename__ = "backup_snapshots"
+
+    backup_id: Mapped[str] = mapped_column(String(96), primary_key=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), index=True
+    )
+    database_path: Mapped[str] = mapped_column(String(1024), nullable=False)
+    database_size_bytes: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    verification_status: Mapped[str] = mapped_column(
+        String(32), nullable=False, default="recorded", index=True
+    )
+    notes: Mapped[str] = mapped_column(Text, default="")
+    recorded_by: Mapped[str] = mapped_column(String(128), default="")
+    verified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    verified_by: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    source: Mapped[str] = mapped_column(String(64), default="operator", index=True)
+
+
+class LiveIntegrationToggleRow(Base):
+    """Explicit enablement record for a single live integration (US-040).
+
+    The unique key is ``(organization_id, integration)`` so each
+    workspace can have at most one current toggle per integration.
+    The state column is constrained to ``disabled`` or ``enabled`` at
+    the application layer; the database does not enforce the
+    vocabulary. Approval metadata is stored alongside the state so
+    audit history and the operator UI can show why and when the
+    toggle was last changed.
+    """
+
+    __tablename__ = "live_integration_toggles"
+    __table_args__ = (
+        sa.UniqueConstraint(
+            "organization_id",
+            "integration",
+            name="uq_live_integration_toggles_org_integration",
+        ),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    organization_id: Mapped[str] = mapped_column(String(36), nullable=False, index=True)
+    integration: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    state: Mapped[str] = mapped_column(String(16), nullable=False, default="disabled")
+    previous_state: Mapped[str] = mapped_column(String(16), default="disabled")
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+    updated_by: Mapped[str] = mapped_column(String(128), default="")
+    approval_note: Mapped[str] = mapped_column(Text, default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class CutoverEventRow(Base):
+    """Append-only cutover transition history (US-040).
+
+    Records the actor, the previous/target mode, the launch-gate
+    summary, the reason, and an optional free-form note for every
+    `enter_pilot_live`, `pause`, and `rollback` action. Rows are
+    never updated or deleted by the product layer.
+    """
+
+    __tablename__ = "cutover_events"
+
+    event_id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    organization_id: Mapped[str] = mapped_column(String(36), nullable=False, index=True)
+    action: Mapped[str] = mapped_column(String(32), nullable=False, index=True)
+    previous_mode: Mapped[str] = mapped_column(String(32), nullable=False)
+    new_mode: Mapped[str] = mapped_column(String(32), nullable=False)
+    actor: Mapped[str] = mapped_column(String(128), nullable=False)
+    actor_role: Mapped[str] = mapped_column(String(64), default="")
+    reason: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    notes: Mapped[str] = mapped_column(Text, default="")
+    gate_passed: Mapped[bool] = mapped_column(Boolean, default=False)
+    gate_summary: Mapped[str] = mapped_column(Text, default="")
+    occurred_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), index=True
+    )
+
+
+class WorkerHeartbeatRow(Base):
+    """Last-task heartbeat per worker (US-040).
+
+    The Dramatiq worker writes a row whenever it completes a task.
+    The launch gate reads the most recent row to verify the worker
+    is alive before allowing `pilot_live` entry. Only the latest
+    row per `worker_id` is meaningful; the table is append-only and
+    never trimmed by the product layer.
+    """
+
+    __tablename__ = "worker_heartbeats"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    worker_id: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    last_seen: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), index=True
+    )
+    last_task: Mapped[str] = mapped_column(String(96), default="")
+    detail: Mapped[str] = mapped_column(Text, default="")
+    organization_id: Mapped[str] = mapped_column(String(36), default="", index=True)
+
+
+class AlertRuleRow(Base):
+    """Durable alert rule definition (US-041).
+
+    The unique key is ``(organization_id, name)`` so a workspace can
+    carry multiple rules per metric but never two rules with the same
+    name. ``is_system`` is set by the seed migration; system rules
+    can be tuned (threshold/window/severity/channels/enabled) by an
+    owner or admin but cannot be deleted or renamed through the
+    rule management API.
+    """
+
+    __tablename__ = "alert_rules"
+    __table_args__ = (
+        sa.UniqueConstraint(
+            "organization_id",
+            "name",
+            name="uq_alert_rules_org_name",
+        ),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    organization_id: Mapped[str] = mapped_column(String(36), nullable=False, index=True)
+    name: Mapped[str] = mapped_column(String(96), nullable=False)
+    metric: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    operator: Mapped[str] = mapped_column(String(8), nullable=False)
+    threshold: Mapped[float] = mapped_column(Float, nullable=False, default=0)
+    window_seconds: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    severity: Mapped[str] = mapped_column(String(16), nullable=False, default="warning")
+    cooldown_seconds: Mapped[int] = mapped_column(Integer, nullable=False, default=600)
+    channels_json: Mapped[str] = mapped_column(Text, nullable=False, default="[]")
+    enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    is_system: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    sort_order: Mapped[int] = mapped_column(Integer, nullable=False, default=100)
+    created_by: Mapped[str] = mapped_column(String(128), nullable=False, default="system")
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=sa.func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=sa.func.now(), onupdate=sa.func.now()
+    )
+
+
+class AlertEventRow(Base):
+    """A single firing of an alert rule (US-041).
+
+    ``dedup_key`` is a hash of ``rule_id`` and the firing window; the
+    evaluator uses it together with ``cooldown_seconds`` to suppress
+    duplicate firings. ``status`` cycles through
+    ``firing`` -> ``acknowledged`` -> ``resolved`` (or
+    ``suppressed`` when a duplicate lands inside the cooldown).
+    Payload is the sanitized, size-capped snapshot of the metric
+    value at firing time; raw secret material is never persisted on
+    this row.
+    """
+
+    __tablename__ = "alert_events"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    organization_id: Mapped[str] = mapped_column(String(36), nullable=False, index=True)
+    rule_id: Mapped[str] = mapped_column(String(36), nullable=False, index=True)
+    rule_name: Mapped[str] = mapped_column(String(96), nullable=False)
+    metric: Mapped[str] = mapped_column(String(64), nullable=False)
+    fired_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=sa.func.now()
+    )
+    resolved_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    status: Mapped[str] = mapped_column(String(16), nullable=False, default="firing")
+    severity: Mapped[str] = mapped_column(String(16), nullable=False, default="warning")
+    payload_json: Mapped[str] = mapped_column(Text, nullable=False, default="{}")
+    correlation_id: Mapped[str] = mapped_column(String(64), nullable=False, default="")
+    dedup_key: Mapped[str] = mapped_column(String(128), nullable=False, index=True)
+    acknowledged_by: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    acknowledged_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    resolution_note: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=sa.func.now()
+    )
+
+
+class MetricsExportPolicyRow(Base):
+    """Per-workspace external metrics export policy (US-042).
+
+    The row stores the configuration for every sink (Prometheus,
+    OpenTelemetry, Sentry), the last export status per sink, the
+    acceptance metadata, and the per-sink audit-friendly status
+    markers. The row is unique on `organization_id` so a workspace
+    has exactly one policy at a time.
+
+    The policy row never stores secret material: the Prometheus
+    scrape token is stored as an `argon2id` hash, and the Sentry
+    DSN is stored as a reference to the secret manager entry. The
+    transport layer is responsible for looking up the secret at
+    export time.
+    """
+
+    __tablename__ = "metrics_export_policies"
+    __table_args__ = (
+        sa.UniqueConstraint(
+            "organization_id",
+            name="uq_metrics_export_policies_org",
+        ),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    organization_id: Mapped[str] = mapped_column(String(36), nullable=False, index=True)
+    prometheus_json: Mapped[str] = mapped_column(Text, nullable=False, default="{}")
+    otel_json: Mapped[str] = mapped_column(Text, nullable=False, default="{}")
+    sentry_json: Mapped[str] = mapped_column(Text, nullable=False, default="{}")
+    prometheus_last_status: Mapped[str] = mapped_column(
+        String(32), nullable=False, default="disabled"
+    )
+    prometheus_last_export_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    otel_last_status: Mapped[str] = mapped_column(
+        String(32), nullable=False, default="disabled"
+    )
+    otel_last_export_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    sentry_last_status: Mapped[str] = mapped_column(
+        String(32), nullable=False, default="disabled"
+    )
+    sentry_last_export_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    accepted_by: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    accepted_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=sa.func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=sa.func.now(), onupdate=sa.func.now()
+    )

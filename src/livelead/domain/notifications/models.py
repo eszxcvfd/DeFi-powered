@@ -16,6 +16,7 @@ class NotificationType(StrEnum):
     REMINDER_DUE = "reminder_due"
     REMINDER_OVERDUE = "reminder_overdue"
     EVENT_UPCOMING = "event_upcoming"
+    ALERT_FIRED = "alert_fired"
 
 
 class NotificationChannel(StrEnum):
@@ -34,6 +35,7 @@ class SourceRecordType(StrEnum):
     REMINDER = "reminder"
     EVENT = "event"
     SYSTEM = "system"
+    ALERT_EVENT = "alert_event"
 
 
 class DeliveryStatus(StrEnum):
@@ -54,6 +56,7 @@ DEFAULT_EMAIL_PREFERENCES: dict[NotificationType, bool] = {
     NotificationType.JOB_FAILED: True,
     NotificationType.REMINDER_DUE: False,
     NotificationType.REMINDER_OVERDUE: True,
+    NotificationType.ALERT_FIRED: False,
     NotificationType.EVENT_UPCOMING: True,
 }
 

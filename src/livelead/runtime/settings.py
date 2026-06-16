@@ -27,6 +27,32 @@ class AppSettings(BaseSettings):
     )
 
     environment: str = Field(default="development", description="Runtime mode label")
+    environment_mode: str = Field(
+        default="test_like",
+        description=(
+            "Pilot-live cutover mode (US-040): test_like | pilot_live | paused. "
+            "Default is test_like to keep dev defaults safe."
+        ),
+    )
+    pilot_live_admin_pin: str | None = Field(
+        default=None,
+        description=(
+            "Optional shared-secret approval token required by the cutover API "
+            "to confirm a real-operator enter-pilot-live decision (US-040)."
+        ),
+    )
+    launch_gate_backup_max_age_hours: float = Field(
+        default=26.0,
+        description="Maximum allowed age (hours) of the latest backup snapshot",
+    )
+    launch_gate_worker_heartbeat_max_seconds: float = Field(
+        default=300.0,
+        description="Maximum allowed age (seconds) of the most recent worker heartbeat",
+    )
+    launch_gate_min_backup_count: int = Field(
+        default=1,
+        description="Minimum number of recorded/verified backup snapshots required to enter pilot_live",
+    )
     sqlite_path: Path = Field(default_factory=_default_sqlite_path)
     redis_url: str = Field(default="redis://127.0.0.1:6379/0")
     api_host: str = Field(default="127.0.0.1")
