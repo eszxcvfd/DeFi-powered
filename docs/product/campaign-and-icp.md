@@ -38,6 +38,8 @@ This product slice does not yet cover:
 - Campaign cloning.
 - Industry templates for Charity/Nonprofit, Tokenization/RWA, or Cross-border
   Payment.
+- Discovery query expansion and reuse. That first slice is defined in
+  `docs/product/query-expansion-and-review.md`.
 
 ## Contract Rules
 
@@ -54,6 +56,9 @@ This product slice does not yet cover:
   settings together so later discovery and scoring stories can snapshot them.
 - If the system infers assumptions while parsing a brief, those assumptions
   must remain reviewable and editable by the user.
+- A later natural-language discovery copilot may help transform fuzzy discovery
+  questions into structured planning, but that governed Q&A slice is defined in
+  `docs/product/discovery-copilot-and-structured-briefing.md`.
 - Source selection and discovery-run actions may appear in the UI only as
   clearly deferred or disabled surfaces until the corresponding stories land.
 - Editing campaign criteria after creation is allowed; downstream effects on

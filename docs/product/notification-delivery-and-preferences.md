@@ -53,9 +53,9 @@ This product slice does not yet cover:
   parallel due-date heuristics.
 - Discovery-job notifications must build on the durable job-state transitions
   from `docs/product/discovery-job-lifecycle.md`.
-- Upcoming-event notifications must rely on canonical event time data and must
-  not fabricate time windows when the source event lacks a trustworthy start
-  time.
+- Upcoming-event notifications must rely on canonical event time data plus an
+  explicit watched-event or reminder source of truth; they must not fabricate
+  time windows when the source event lacks a trustworthy start time.
 - Preference changes must take effect for future notifications without
   retroactively mutating already delivered or already dismissed records.
 - The first implementation may keep cadence choices intentionally narrow, but

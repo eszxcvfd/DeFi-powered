@@ -31,7 +31,11 @@ This product slice does not yet cover:
 - Event scoring, priority ranking, or score-breakdown workflows.
 - Audience hypothesis generation.
 - Engagement content, review, or send flows.
-- Bulk watchlist, reminders, or bulk re-score actions.
+- Manual canonical-event override and event-history workflow. That later slice
+  is defined in `docs/product/event-manual-overrides-and-history.md`.
+- Watchlist and event reminder workflow. That later slice is defined in
+  `docs/product/event-watchlist-and-reminders.md`.
+- Bulk re-score actions.
 - Browser-assisted session launch from event detail. That first supervised
   session slice is defined in
   `docs/product/browser-session-console-and-isolation.md`.
@@ -51,8 +55,8 @@ This product slice does not yet cover:
 - The product must keep enough provenance for a reviewer to understand which
   source or sources produced the event and when they were observed.
 - Manual overrides to canonical event data are allowed only when actor and
-  timestamp metadata can be preserved, even if the first UX for manual override
-  remains out of scope for this story.
+  timestamp metadata can be preserved. The dedicated override contract is
+  defined in `docs/product/event-manual-overrides-and-history.md`.
 - Results list and detail responses must expose source evidence safely without
   leaking secrets, connector internals, or policy-protected raw credentials.
 - A completed discovery job is not sufficient proof of value unless users can

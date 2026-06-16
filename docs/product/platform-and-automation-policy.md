@@ -54,6 +54,16 @@ isolation is needed:
 - Browser automation is a supporting access path for the core MVP jobs, used
   only when permitted feeds, official APIs, or simpler manual review paths are
   not sufficient. It must not become the primary product surface.
+- The first automated browser-discovery slice should stay bounded to approved
+  public websites, `Playwright`, read-only extraction recipes, and fixture-
+  backed proof before widening to `Selenium`, login-required surfaces, or
+  supervised manual browser control.
+- When `Selenium` or another alternate adapter is introduced, engine choice
+  must remain configuration-driven behind the shared browser interface; it must
+  not leak provider SDK branching into domain/application logic.
+- Scheduled discovery must dispatch through the dedicated `scheduler` runtime
+  and then reuse the same governed discovery orchestration path as manual runs
+  rather than creating a second policy-bypass execution path.
 - Sending content, posting, destructive actions, or external communication must
   require preview and confirmation.
   The first confirmation-gated slice is defined in

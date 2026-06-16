@@ -29,14 +29,29 @@ without leaking provider secrets.
 
 ## Commands
 
-Add commands after scripts exist.
-
-```text
-TBD
-Suggested: ./scripts/verify-us-029.sh
-Suggested: scripts/bin/harness-cli story verify US-029
+```bash
+./scripts/verify-us-029.sh
 ```
+
+The script runs:
+
+- `tests/unit/test_notifications_policy.py` (28 unit cases)
+- `tests/integration/test_notifications_api.py` (10 integration cases)
+- `frontend/e2e/notifications.spec.ts` (1 e2e case)
+- `scripts/bin/harness-cli story verify US-029` records the matrix
+  result separately.
 
 ## Acceptance Evidence
 
-Add results after verification.
+- `scripts/bin/harness-cli query matrix` reports US-029 as `implemented`
+  with `unit=yes, integ=yes, e2e=yes, plat=yes`.
+- `scripts/bin/harness-cli story verify US-029` returns `pass` and
+  stamps `last_verified_at` and `last_verified_result=pass`.
+- A representative e2e run covers: sign in as the bootstrap owner,
+  open the inbox and preferences pages, change a preference, trigger
+  the admin scan from the UI, and confirm the read/dismiss lifecycle
+  plus the audit log entries for `notification.preference_changed`
+  and `notification.delivered` when a candidate is generated.
+- Unit and integration tests cover eligibility, preference filtering,
+  default seed matrix, email provider failure redaction, role gating,
+  and tenant-scoped inbox queries.

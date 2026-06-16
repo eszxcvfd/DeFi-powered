@@ -26,12 +26,42 @@ actually change.
 - `source-registry-and-policy.md`: governed source catalog and channel policy.
 - `discovery-job-lifecycle.md`: discovery launch, progress, state model, and
   structured criteria snapshots.
+- `scheduled-discovery-and-sync.md`: first bounded recurring discovery contract
+  with scheduler dispatch and overlap guardrails.
+- `query-expansion-and-review.md`: first governed discovery-query expansion
+  contract with grouped variants and approval-required AI suggestions.
+- `discovery-copilot-and-structured-briefing.md`: first governed natural-
+  language discovery-copilot contract with structured grounded responses.
+- `ai-feedback-and-learning-signals.md`: first governed AI-feedback contract for
+  discovery-copilot and audience-analysis outputs without auto-learning.
+- `feedback-learning-and-scoring-suggestions.md`: first governed scoring-weight
+  suggestion contract derived from feedback signals with explicit approval.
+- `real-environment-cutover-and-live-operations.md`: first governed pilot-live
+  cutover contract for running the system in a real environment beyond test-only
+  proof.
+- `live-feed-and-api-discovery.md`: first real external `API`/`RSS`/`ICS`
+  discovery contract and safe canonical-event ingestion.
+- `public-website-playwright-discovery.md`: first governed `Playwright`
+  website-discovery contract and browser-recipe extraction baseline.
+- `selenium-and-alternate-adapter-discovery.md`: first governed `Selenium` or
+  alternate-adapter discovery contract and engine-selection baseline.
+- `event-manual-overrides-and-history.md`: authorized canonical-event edits,
+  overwrite protection, and event change history.
+- `event-watchlist-and-reminders.md`: user-scoped watched events, reminder
+  scheduling, and saved-event revisit workflow.
 - `engagement-plans-and-tasks.md`: event-state-aware playbooks and task
   contracts.
 - `generated-content-and-safety.md`: reviewable AI drafts and safety rules.
 - `platform-and-automation-policy.md`: runtime and automation guardrails.
 - `audit-log-and-governance.md`: admin audit history, redaction, and governance
   query surface.
+
+## Runtime and operators
+
+- Environment template: repo-root `.env.example` (full `LIVELEAD_*` list).
+- Copilot (Gemini), query expansion, and verify commands:
+  `docs/RUNTIME_CONFIGURATION.md`.
+- Local processes and browser/discovery flags: `docs/FOUNDATION_RUNTIME.md`.
 
 ## Update Rule
 

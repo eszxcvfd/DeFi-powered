@@ -31,7 +31,8 @@ This product slice covers:
 
 This product slice does not yet cover:
 
-- Live discovery execution against external sources.
+- Live discovery execution against external sources beyond the first feed or
+  API slice defined in `docs/product/live-feed-and-api-discovery.md`.
 - Full browser recipe authoring UX.
 - Interactive login sessions. The first supervised browser-session slice is
   defined in `docs/product/browser-session-console-and-isolation.md`.
@@ -60,6 +61,16 @@ This product slice does not yet cover:
   and approval metadata.
 - When an official API or feed source is suitable, the product contract must
   preserve that preference rather than defaulting to browser automation.
+- Feed or API connector records must preserve enough endpoint, parser, and
+  stable-identity metadata for the first live external discovery slice to run
+  without pushing provider logic into business rules.
+- Browser-discovery connector records must preserve enough recipe, engine, and
+  bounded-readiness metadata for a `Playwright` discovery slice to run without
+  turning the registry into an unrestricted browser-script store.
+- Alternate-adapter connector records must preserve explicit engine-selection
+  and readiness metadata so `Selenium` or another approved adapter can run
+  through the same discovery contract without hard-coding engine choice into
+  business logic.
 - Secrets must never be returned in plain form from admin query surfaces and
   must never be written to logs.
 - Browser-oriented connector configuration may be stored, but this story does

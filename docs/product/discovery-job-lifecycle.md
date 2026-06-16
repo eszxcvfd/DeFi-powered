@@ -27,10 +27,16 @@ This product slice covers:
 - Controlled retry rules for transient failures and explicit non-infinite retry
   behavior for policy, authentication, or CAPTCHA-style failures.
 
-This product slice does not yet cover:
+Live external feed or API execution is defined in
+  `docs/product/live-feed-and-api-discovery.md` (US-032). This lifecycle doc
+  still does not cover:
 
-- Live external API, RSS, Playwright, or Selenium connectors.
-- Scheduler or cron-based discovery runs.
+- Scheduled or incremental live sync beyond the first recurrence slice defined
+  in `docs/product/scheduled-discovery-and-sync.md`.
+- Selenium or alternate-adapter connectors beyond the governed baseline in
+  `docs/product/selenium-and-alternate-adapter-discovery.md` (US-034). Governed
+  `Playwright` website discovery remains in
+  `docs/product/public-website-playwright-discovery.md` (US-033).
 - Full conversational discovery copilot. A prior brief may already have been
   parsed into campaign criteria, but live question-answer discovery guidance
   remains a follow-up slice.

@@ -44,6 +44,20 @@ implemented until tests or validation evidence exist.
 | US-023 | Debug artifacts, screenshot capture, and retention guardrails for supervised browser sessions | yes | yes | yes | yes | implemented | `./scripts/verify-us-023.sh` |
 | US-024 | Governed browser profile lifecycle, consented storage state, and expiry controls | yes | yes | yes | yes | implemented | `./scripts/verify-us-024.sh`; `frontend/e2e/browser-profile-lifecycle.spec.ts` |
 | US-025 | CloakBrowser approval gates, source-scoped enablement, and kill-switch controls | yes | yes | yes | yes | implemented | `./scripts/verify-us-025.sh`; `frontend/e2e/cloakbrowser-policy.spec.ts` |
+| US-026 | Admin audit log baseline, tenant-scoped event history, and secret-safe governance filters | yes | yes | yes | yes | implemented | `./scripts/verify-us-026.sh`; `frontend/e2e/audit-log.spec.ts` |
+| US-027 | Identity access baseline with real auth, RBAC, and tenant isolation | yes | yes | yes | yes | implemented | `./scripts/verify-us-027.sh`; `frontend/e2e/identity-access.spec.ts` |
+| US-028 | Member management baseline with invitations and governed access changes | yes | yes | yes | yes | implemented | `./scripts/verify-us-028.sh`; `frontend/e2e/member-management.spec.ts` |
+| US-029 | Notification delivery baseline with inbox, email alerts, and preferences | yes | yes | yes | yes | implemented | `./scripts/verify-us-029.sh`; `frontend/e2e/notifications.spec.ts` |
+| US-030 | User-scoped event watchlist, reminder scheduling, and watched-state filters | yes | yes | yes | yes | implemented | `./scripts/verify-us-030.sh`; `frontend/e2e/event-watchlist.spec.ts` |
+| US-031 | Canonical event manual overrides, overwrite protection, and change history | yes | yes | yes | yes | implemented | `./scripts/verify-us-031.sh`; `frontend/e2e/event-overrides.spec.ts` |
+| US-032 | Live external API/RSS/ICS discovery with policy-aware canonical event ingestion | yes | yes | yes | yes | implemented | `./scripts/verify-us-032.sh`; `frontend/e2e/live-feed-discovery.spec.ts` |
+| US-033 | Public website Playwright discovery with policy-aware browser recipe extraction | yes | yes | yes | yes | implemented | `./scripts/verify-us-033.sh`; `frontend/e2e/website-playwright-discovery.spec.ts` |
+| US-034 | Selenium or alternate-adapter discovery with engine-aware canonical event ingestion | yes | yes | yes | yes | implemented | `./scripts/verify-us-034.sh`; `frontend/e2e/selenium-website-discovery.spec.ts` |
+| US-035 | Scheduled discovery runs with bounded recurrence and overlap-safe dispatch | yes | yes | yes | yes | implemented | `./scripts/verify-us-035.sh`; `frontend/e2e/discovery-schedule.spec.ts` |
+| US-036 | Governed query expansion with approval-required AI suggestions | yes | yes | yes | yes | implemented | `./scripts/verify-us-036.sh`; `frontend/e2e/query-expansion.spec.ts` |
+| US-037 | Discovery copilot with structured grounded recommendations | yes | yes | yes | yes | implemented | `./scripts/verify-us-037.sh`; `frontend/e2e/discovery-copilot.spec.ts` |
+| US-038 | Governed AI feedback signals for discovery and audience outputs | yes | yes | yes | yes | implemented | `./scripts/verify-us-038.sh`; `frontend/e2e/ai-feedback.spec.ts` |
+| US-039 | Governed feedback-learning scoring suggestions | yes | yes | yes | yes | implemented | `./scripts/verify-us-039.sh`; `frontend/e2e/scoring-suggestion.spec.ts` |
 
 ## Evidence Rules
 

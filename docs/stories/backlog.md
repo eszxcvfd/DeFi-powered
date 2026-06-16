@@ -104,3 +104,43 @@ the work is selected or when a product decision needs a durable place to land.
   slice with in-app alerts, email delivery for selected reminder/job/event
   cases, and per-user notification preferences before watchlist automation,
   digest scheduling, or external channel integrations.
+- `US-030-event-watchlist-baseline`: add the first user-scoped event watchlist
+  slice with reminder scheduling, watched-state filters, and saved-event revisit
+  flows before calendar export, bulk watchlist actions, or shared-team
+  watchlists.
+- `US-031-event-manual-overrides-baseline`: add the first governed canonical
+  event-edit slice with override protection, clear-override behavior, and
+  change history before bulk edit, calendar export, or advanced event-sync
+  stories.
+- `US-032-live-feed-api-discovery-baseline`: add the first real external
+  discovery slice with governed `API`/`RSS`/`ICS` connectors, policy-aware job
+  execution, and canonical-event ingestion before Playwright, Selenium, or
+  scheduled sync stories.
+- `US-033-public-website-playwright-discovery-baseline`: add the first public
+  website discovery slice with governed `Playwright` recipes, policy-aware
+  browser extraction, and canonical-event ingestion before Selenium, login-
+  required browsing, or broader browser-console stories.
+- `US-034-selenium-adapter-discovery-baseline`: implemented — governed
+  `Selenium`/alternate-adapter discovery with source-scoped engine selection,
+  policy-aware extraction, and canonical-event ingestion.
+- `US-035-scheduled-discovery-baseline`: add the first bounded recurring
+  discovery slice with daily/weekly/restricted-cron schedules, scheduler
+  dispatch, overlap protection, and standard discovery-job visibility before
+  query expansion or discovery-copilot stories.
+- `US-036-query-expansion-baseline`: **implemented** — governed query expansion,
+  grouped variants, approval-required AI suggestions, immutable job/schedule
+  snapshots; `./scripts/verify-us-036.sh`.
+- `US-037-discovery-copilot-baseline`: **implemented** — structured copilot
+  responses (Gemini or deterministic), accept → query expansion; Google AI Studio
+  via `LIVELEAD_GOOGLE_AI_STUDIO_API_KEY`; `./scripts/verify-us-037.sh`;
+  see `docs/RUNTIME_CONFIGURATION.md`.
+- `US-038-ai-feedback-signals-baseline`: **implemented** — governed AI feedback
+  for copilot and audience targets; `./scripts/verify-us-038.sh`;
+  `docs/product/ai-feedback-and-learning-signals.md`.
+- `US-039-feedback-learning-scoring-suggestions`: **implemented** — reviewable
+  scoring-weight suggestions from campaign feedback, approval-gated snapshots;
+  `./scripts/verify-us-039.sh`; `docs/decisions/0017-scoring-suggestion-feedback-learning-baseline.md`.
+- `US-040-real-environment-pilot-cutover`: add the first high-risk cutover
+  slice that moves the system from test-oriented proof to one governed real
+  environment with live runtime config, backups, rollback, readiness checks, and
+  live connector guardrails.

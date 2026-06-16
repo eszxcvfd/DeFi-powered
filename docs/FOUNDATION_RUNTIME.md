@@ -61,15 +61,29 @@ Default API runtime uses **Playwright** (`LIVELEAD_BROWSER_AUTOMATION_MODE=playw
 
 | File | Location |
 | --- | --- |
-| Main app env | **Repo root** `.env` (copy from `.env.example`) — e.g. `DeFi-powered/.env` |
+| Main app env | **Repo root** `.env` (copy from `.env.example`) |
+| Full variable list | `.env.example` + `docs/RUNTIME_CONFIGURATION.md` |
 | Chrome path (auto) | `frontend/.playwright-browser.env` (created by `./scripts/playwright-install.sh`) |
-| Example template | `.env.example` at repo root |
+
+Restart API and worker after editing `.env`.
 
 If you see `Executable doesn't exist at .../ms-playwright/chromium_headless_shell-...`, set `LIVELEAD_PLAYWRIGHT_CHROMIUM_EXECUTABLE=/usr/bin/google-chrome-stable` in root `.env` or run `./scripts/playwright-install.sh`, then restart the API.
 
 ### Real discovery (RSS/Atom/ICS)
 
 Campaign **Run discovery** fetches real feeds when `LIVELEAD_DISCOVERY_USE_MOCK_CONNECTORS=false` (default in repo-root `.env`). Settings load from that file even if the worker was started from another directory (`env_bootstrap.load_repo_dotenv`). **Restart the dramatiq worker** after changing `.env` — workers do not hot-reload config. Known domains map to public RSS URLs (`src/livelead/infrastructure/connectors/feed_urls.py`); override per source via Admin `rate_limit_json`: `{"feed_url": "https://..."}`. Items are filtered by campaign positive/exclude keywords. Tests set `LIVELEAD_DISCOVERY_USE_MOCK_CONNECTORS=true`. Fixture titles (B2B Payments Webinar, SaaS Growth Meetup, …) only come from mock mode or `*-mock.example.com` sources.
+
+### Query expansion and discovery copilot (US-036 / US-037)
+
+On **Campaign detail**, operators can generate and approve **query expansion**
+variants and ask the **discovery copilot** (natural-language planning). Copilot
+acceptance projects framing into query expansion; neither path auto-starts
+discovery.
+
+For Gemini copilot locally, set `LIVELEAD_DISCOVERY_COPILOT_PROVIDER=gemini`
+and `LIVELEAD_GOOGLE_AI_STUDIO_API_KEY` in repo-root `.env`. See
+`docs/RUNTIME_CONFIGURATION.md` for model ids, SDK, and verify scripts
+(`./scripts/verify-us-036.sh`, `./scripts/verify-us-037.sh`).
 
 ## Process entrypoints
 
