@@ -39,6 +39,14 @@ actually change.
 - `real-environment-cutover-and-live-operations.md`: first governed pilot-live
   cutover contract for running the system in a real environment beyond test-only
   proof.
+- `observability-and-alerting.md`: first operational observability and
+  alerting contract that turns durable runtime signals into secret-safe
+  alerts and a single operator view.
+- `external-metrics-and-tracing.md`: first external metrics pipeline
+  contract that exports the `observability-and-alerting` signals to a
+  Prometheus scrape target, an OpenTelemetry collector, and a Sentry
+  project behind the `SanitizeAlertPayload` helper and the closed
+  `MetricRegistry`.
 - `live-feed-and-api-discovery.md`: first real external `API`/`RSS`/`ICS`
   discovery contract and safe canonical-event ingestion.
 - `public-website-playwright-discovery.md`: first governed `Playwright`

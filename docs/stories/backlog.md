@@ -140,7 +140,36 @@ the work is selected or when a product decision needs a durable place to land.
 - `US-039-feedback-learning-scoring-suggestions`: **implemented** — reviewable
   scoring-weight suggestions from campaign feedback, approval-gated snapshots;
   `./scripts/verify-us-039.sh`; `docs/decisions/0017-scoring-suggestion-feedback-learning-baseline.md`.
-- `US-040-real-environment-pilot-cutover`: add the first high-risk cutover
-  slice that moves the system from test-oriented proof to one governed real
-  environment with live runtime config, backups, rollback, readiness checks, and
-  live connector guardrails.
+- `US-040-real-environment-pilot-cutover`: **implemented** — pilot-live
+  cutover slice with launch gate, live toggles, backup metadata, and
+  guarded rollback; `./scripts/verify-us-040.sh`;
+  `docs/decisions/0018-pilot-live-cutover-baseline.md`;
+  `docs/ops/pilot-live-cutover-runbook.md`;
+  `docs/ops/pilot-live-pause-runbook.md`;
+  `docs/ops/pilot-live-rollback-runbook.md`.
+- `US-041-operational-observability-and-alerting-baseline`: **planned** —
+  first bounded observability and alerting slice that consumes the
+  `US-040` runtime readiness contract and the `US-026` audit log; durable
+  `AlertRule` and `AlertEvent` tables, secret-safe payload helper, evaluator
+  with cooldown, in-app inbox and email delivery reused from `US-029`,
+  `GET /admin/observability/summary`, and seed rules for stale backup,
+  missing worker heartbeat, connector failure spike, discovery
+  `NEEDS_USER_ACTION` storm, browser crash loop, and audit retention
+  breach risk; `docs/stories/epics/E05-hardening/US-041-operational-observability-and-alerting-baseline/`;
+  `docs/product/observability-and-alerting.md`;
+  `docs/decisions/0019-observability-and-alerting-baseline.md`.
+- `US-042-external-metrics-pipeline-baseline`: **planned** — first
+  external metrics pipeline slice that closes the deferred follow-up
+  in `0019` and ships a vendor-agnostic, local-first export side for
+  the `US-041` observability contract; durable `MetricsExportPolicy`
+  table, closed `MetricRegistry` mirroring the `SignalProvider` enum,
+  pluggable `ExportTransport` Protocol with three concrete transports
+  (`PrometheusExposition`, `OtelCollector`, `SentryIngest`), secret-safe
+  payload reuse from `US-041`, owner/admin REST surface for policy
+  management and `Test export`, `GET /metrics` endpoint gated by a
+  per-workspace scrape token and an allowlist of source CIDRs,
+  OpenTelemetry tracer integration, Sentry error reporter integration,
+  operator panel widget, and `docs/ops/metrics-export-runbook.md`;
+  `docs/stories/epics/E05-hardening/US-042-external-metrics-pipeline-baseline/`;
+  `docs/product/external-metrics-and-tracing.md`;
+  `docs/decisions/0020-external-metrics-pipeline-baseline.md`.

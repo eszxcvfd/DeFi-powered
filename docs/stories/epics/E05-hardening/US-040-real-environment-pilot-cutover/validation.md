@@ -49,3 +49,16 @@
   also one approved browser-discovery connector?
 - Should runtime live-mode entry be controlled only by documented ops steps, or
   does the team want a first owner/admin UI/API control in this same slice?
+
+## Resolved (US-040 implementation)
+
+- The first pilot-live environment is one organization/workspace at launch.
+  Multi-tenant cutover is a follow-on story.
+- Day-one live connectors are feed/API plus one approved browser-discovery
+  connector; the toggle name `browser_external` is the contract for that
+  control point.
+- Runtime live-mode entry is exposed via
+  `POST /admin/cutover/enter-pilot-live` for owner/admin, in addition to the
+  documented ops steps in `docs/ops/pilot-live-cutover-runbook.md`. The
+  endpoint is approval-gated through `LIVELEAD_PILOT_LIVE_ADMIN_PIN` and the
+  launch gate.

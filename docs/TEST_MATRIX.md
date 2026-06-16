@@ -58,6 +58,9 @@ implemented until tests or validation evidence exist.
 | US-037 | Discovery copilot with structured grounded recommendations | yes | yes | yes | yes | implemented | `./scripts/verify-us-037.sh`; `frontend/e2e/discovery-copilot.spec.ts` |
 | US-038 | Governed AI feedback signals for discovery and audience outputs | yes | yes | yes | yes | implemented | `./scripts/verify-us-038.sh`; `frontend/e2e/ai-feedback.spec.ts` |
 | US-039 | Governed feedback-learning scoring suggestions | yes | yes | yes | yes | implemented | `./scripts/verify-us-039.sh`; `frontend/e2e/scoring-suggestion.spec.ts` |
+| US-040 | Real-environment pilot cutover with guarded live operations | yes | yes | no | yes | implemented | `./scripts/verify-us-040.sh`; `docs/ops/pilot-live-{cutover,pause,rollback}-runbook.md`; `/admin/runtime-readiness` |
+| US-041 | Operational observability and alerting baseline | yes | yes | yes | yes | implemented | `./scripts/verify-us-041.sh`; `frontend/e2e/observability-panel.spec.ts`; `docs/ops/observability-runbook.md` |
+| US-042 | External metrics pipeline baseline (Prometheus exporter, OpenTelemetry collector, Sentry ingestion, Grafana dashboard seam) | no | no | no | no | planned | story packet at `docs/stories/epics/E05-hardening/US-042-external-metrics-pipeline-baseline/`; `docs/ops/metrics-export-runbook.md`; `docs/decisions/0020-external-metrics-pipeline-baseline.md` |
 
 ## Evidence Rules
 
