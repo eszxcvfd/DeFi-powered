@@ -7,7 +7,10 @@ cd "$ROOT"
 export PYTHONPATH="${PYTHONPATH:-}:src"
 export LIVELEAD_SQLITE_PATH="${LIVELEAD_SQLITE_PATH:-$ROOT/data/livelead.sqlite3}"
 export LIVELEAD_BROWSER_AUTOMATION_MODE="${LIVELEAD_BROWSER_AUTOMATION_MODE:-playwright}"
-export LIVELEAD_DISCOVERY_USE_MOCK_CONNECTORS=true
+# Default false so live-feed e2e (US-032) can hit fixture RSS; website e2e (US-033) sets true in verify script.
+export LIVELEAD_DISCOVERY_USE_MOCK_CONNECTORS="${LIVELEAD_DISCOVERY_USE_MOCK_CONNECTORS:-false}"
+export LIVELEAD_EXPOSE_E2E_DISCOVERY_RSS_FIXTURE=true
+export LIVELEAD_EXPOSE_E2E_DISCOVERY_WEBSITE_FIXTURE=true
 if [ -f "$ROOT/frontend/.playwright-browser.env" ]; then
   # shellcheck source=/dev/null
   source "$ROOT/frontend/.playwright-browser.env"

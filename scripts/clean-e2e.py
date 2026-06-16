@@ -128,6 +128,12 @@ def main():
                    OR name LIKE '%Browser E2E%'
                    OR name LIKE '%US021%'
                    OR name LIKE '%US022%'
+                   OR name LIKE '%Live Feed%'
+                   OR name LIKE '%Website PW%'
+                   OR name LIKE '%Website Selenium%'
+                   OR name LIKE '%Schedule Camp%'
+                   OR name LIKE '%Copilot Camp%'
+                   OR name LIKE '%QE Camp%'
                 """
             )
             e2e_campaigns = cursor.fetchall()
@@ -255,6 +261,7 @@ def main():
                 SELECT id, name, domain FROM sources 
                 WHERE name LIKE '%E2E%' 
                    OR name LIKE '%Playwright%' 
+                   OR name LIKE '%Selenium%'
                    OR domain LIKE '%localhost%'
                    OR (domain LIKE '%example.com%' AND domain NOT IN ('success-mock.example.com'))
                 """

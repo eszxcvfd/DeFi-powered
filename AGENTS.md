@@ -28,6 +28,13 @@
   `docs/product/member-management-and-access-governance.md`, and
   `docs/product/notification-delivery-and-preferences.md` before redefining the
   surface.
+- Local runtime and secrets: repo-root `.env` from `.env.example`; copilot
+  (Gemini), query expansion, and verify scripts are documented in
+  `docs/RUNTIME_CONFIGURATION.md` and `docs/FOUNDATION_RUNTIME.md`.
+- For discovery query expansion and copilot, prefer
+  `docs/product/query-expansion-and-review.md` and
+  `docs/product/discovery-copilot-and-structured-briefing.md` (US-036/037
+  implemented).
 
 <!-- HARNESS:BEGIN -->
 ## Harness
