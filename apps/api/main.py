@@ -7,6 +7,7 @@ from fastapi import FastAPI
 from sqlalchemy import text
 
 from livelead.application.auth import AuthService
+from livelead.application.runtime.registry import RuntimeRegistry
 from livelead.domain.identity import LoginRateLimiter
 from livelead.infrastructure.db.models import Base
 from livelead.infrastructure.db.session import (
@@ -20,11 +21,15 @@ from livelead.interfaces.auth.tenant_context import configure_auth_boundary
 from livelead.interfaces.rest.admin_connectors import router as admin_connectors_router
 from livelead.interfaces.rest.audit_log import router as audit_log_router
 from livelead.interfaces.rest.auth import router as auth_router
+from livelead.interfaces.rest.backups import router as admin_backups_router
+from livelead.interfaces.rest.cutover import router as admin_cutover_router
+from livelead.interfaces.rest.live_toggles import router as admin_live_toggles_router
 from livelead.interfaces.rest.member_management import (
     invite_router as member_invitations_router,
     router as member_management_router,
 )
 from livelead.interfaces.rest.notifications import router as notifications_router
+from livelead.interfaces.rest.observability import router as observability_router
 from livelead.interfaces.rest.browser_profiles import router as browser_profiles_router
 from livelead.interfaces.rest.cloakbrowser_policy import router as cloakbrowser_policy_router
 from livelead.interfaces.rest.browser_sessions import router as browser_sessions_router
@@ -71,6 +76,7 @@ async def lifespan(app: FastAPI):
     app.state.settings = settings
     app.state.engine = engine
     app.state.session_factory = create_session_factory(engine)
+    app.state.runtime_registry = RuntimeRegistry(settings)
     try:
         async with engine.connect() as conn:
             await conn.execute(text("SELECT 1"))
@@ -145,7 +151,11 @@ def create_app() -> FastAPI:
     app.include_router(audit_log_router)
     app.include_router(member_management_router)
     app.include_router(member_invitations_router)
+    app.include_router(admin_backups_router)
+    app.include_router(admin_live_toggles_router)
+    app.include_router(admin_cutover_router)
     app.include_router(notifications_router)
+    app.include_router(observability_router)
     return app
 
 
