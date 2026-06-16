@@ -17,9 +17,142 @@ from livelead.domain.events.confidence import (
 )
 from livelead.domain.events.deduplication import decide_merge
 from livelead.domain.events.normalize import MockFinding, build_canonical_from_finding
-from livelead.infrastructure.db.models import EventRow, EventSourceObservationRow
+from livelead.domain.event_overrides.models import (
+    ALLOWED_OVERRIDE_FIELDS,
+    OverrideHistoryAction,
+    OverrideValueKind,
+    parse_override_value,
+    value_kind_for,
+)
+from livelead.infrastructure.db.models import (
+    EventChangeHistoryRow,
+    EventManualOverrideRow,
+    EventRow,
+    EventSourceObservationRow,
+)
 
 logger = logging.getLogger("livelead.events")
+
+
+_PROTECTED_FIELDS: frozenset[str] = ALLOWED_OVERRIDE_FIELDS
+
+
+def _protected_field_skip(
+    session: Session,
+    *,
+    organization_id: UUID,
+    event_id: str,
+    field: str,
+    actor_id: str,
+    actor_role: str,
+    reason: str,
+) -> None:
+    """Record a protected-field skip in change history and skip the write.
+
+    The merge path in ``ingest_finding`` calls this helper before
+    any field write that might overwrite a manual override. The
+    helper appends an append-only history row, emits a structured
+    log line, and returns ``True`` when the write must be skipped.
+    The merge caller short-circuits the write so the protected
+    field is preserved untouched.
+    """
+
+    if field not in _PROTECTED_FIELDS:
+        return
+    now = datetime.now(UTC)
+    session.add(
+        EventChangeHistoryRow(
+            id=str(uuid4()),
+            organization_id=str(organization_id),
+            event_id=event_id,
+            action=OverrideHistoryAction.PROTECTED_SKIPPED.value,
+            field=field,
+            value_kind=value_kind_for(field).value,
+            prior_value="",
+            new_value="",
+            source_backed_value="",
+            actor_id=actor_id,
+            actor_role=actor_role,
+            reason=reason[:500],
+            created_at=now,
+        )
+    )
+    logger.info(
+        "event_override_protected_skip org=%s event=%s field=%s reason=%s",
+        organization_id,
+        event_id,
+        field,
+        reason,
+    )
+
+
+def _protected_field_values(
+    session: Session,
+    *,
+    organization_id: UUID,
+    event_id: str,
+    fields: list[str],
+) -> dict[str, str]:
+    """Return the override values for the given fields on this event.
+
+    Used by the merge path to short-circuit field writes for any
+    field that carries an active override. The result is a mapping
+    of field name to current override value; an empty dict means
+    no fields are protected.
+    """
+
+    if not fields:
+        return {}
+    rows = (
+        session.execute(
+            select(EventManualOverrideRow.field, EventManualOverrideRow.override_value).where(
+                EventManualOverrideRow.organization_id == str(organization_id),
+                EventManualOverrideRow.event_id == event_id,
+                EventManualOverrideRow.field.in_(fields),
+            )
+        )
+    ).all()
+    return {row[0]: row[1] for row in rows}
+
+
+def _maybe_apply_field_update(
+    session: Session,
+    *,
+    organization_id: UUID,
+    event_id: str,
+    field: str,
+    new_value: str,
+    actor_id: str,
+    actor_role: str,
+) -> str | None:
+    """Apply a normalized field write unless the field is protected.
+
+    Returns the value that should land on the canonical row, or
+    ``None`` if the field is protected and the write was skipped.
+    The caller is expected to assign the returned value to the
+    event row.
+    """
+
+    if field not in _PROTECTED_FIELDS:
+        return new_value
+    protected = _protected_field_values(
+        session,
+        organization_id=organization_id,
+        event_id=event_id,
+        fields=[field],
+    )
+    if field not in protected:
+        return new_value
+    _protected_field_skip(
+        session,
+        organization_id=organization_id,
+        event_id=event_id,
+        field=field,
+        actor_id=actor_id,
+        actor_role=actor_role,
+        reason="merge attempted to overwrite manual override",
+    )
+    return None
 
 
 def _load_confidence(row: EventRow) -> list[dict]:

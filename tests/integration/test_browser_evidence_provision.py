@@ -85,4 +85,8 @@ async def test_browser_launch_sources_auto_provisions_playwright(client):
     assert r.status_code == 200
     body = r.json()
     assert any(o["runnable"] and o["engine"] == "playwright" for o in body)
+    assert any(o["runnable"] and o["engine"] == "selenium" for o in body)
     assert any("evidence-auto.example.com" in o["domain"] for o in body)
+    names = {o["name"] for o in body}
+    assert any("Playwright" in n for n in names)
+    assert any("Selenium" in n for n in names)

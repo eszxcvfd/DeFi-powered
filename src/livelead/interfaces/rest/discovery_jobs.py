@@ -12,6 +12,11 @@ from livelead.domain.discovery.lifecycle import is_terminal
 from livelead.domain.discovery.models import DiscoveryJobStatus
 from livelead.domain.sources.policy import evaluate_source_policy
 from livelead.infrastructure.db.models import CampaignRow, DiscoveryJobRow
+from livelead.application.discovery.criteria_snapshot import build_criteria_snapshot
+from livelead.application.query_expansion.service import (
+    QueryExpansionBlockedError,
+    QueryExpansionService,
+)
 from livelead.infrastructure.db.repositories.discovery_jobs import DiscoveryJobRepository
 from livelead.infrastructure.db.repositories.sources import SourceRepository
 from livelead.infrastructure.db.source_mappers import row_to_source
@@ -23,6 +28,10 @@ from livelead.interfaces.auth.tenant_context import (
 from livelead.interfaces.rest.deps import get_db_session
 
 router = APIRouter(tags=["discovery-jobs"])
+
+
+class CreateDiscoveryJobBody(BaseModel):
+    use_expansion: bool = True
 
 
 class DiscoveryJobView(BaseModel):
@@ -52,6 +61,7 @@ def _to_view(row: DiscoveryJobRow) -> DiscoveryJobView:
 )
 async def create_discovery_job(
     campaign_id: UUID,
+    body: CreateDiscoveryJobBody = CreateDiscoveryJobBody(),
     tenant: TenantContext = Depends(get_tenant_context),
     session: AsyncSession = Depends(get_db_session),
 ):
@@ -85,15 +95,23 @@ async def create_discovery_job(
                 status_code=409, detail={"policy_denied": list(d.reasons), "source_id": str(sid)}
             )
 
-    import json as _json
-
-    criteria = {
-        "campaign_id": str(campaign_id),
-        "campaign_name": camp_row.name,
-        "source_ids": [str(s) for s in source_ids],
-        "positive_keywords": _json.loads(camp_row.positive_keywords_json or "[]"),
-        "exclude_keywords": _json.loads(camp_row.exclude_keywords_json or "[]"),
-    }
+    use_expansion = body.use_expansion
+    qsvc = QueryExpansionService(session)
+    try:
+        expansion_snap, positive, _exclude = await qsvc.resolve_for_discovery(
+            campaign_id=campaign_id,
+            organization_id=tenant.organization_id,
+            use_expansion=use_expansion,
+        )
+    except QueryExpansionBlockedError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    criteria = build_criteria_snapshot(
+        camp_row,
+        campaign_id=campaign_id,
+        source_ids=[str(s) for s in source_ids],
+        query_expansion=expansion_snap,
+        positive_keywords=positive,
+    )
     repo = DiscoveryJobRepository(session)
     job_row = await repo.create(
         organization_id=tenant.organization_id,

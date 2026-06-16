@@ -145,6 +145,17 @@ def can_edit_lead_pipeline(role: Role | None) -> bool:
     return role in {Role.OWNER, Role.ADMIN, Role.SALES_BD}
 
 
+def can_edit_canonical_event(role: Role | None) -> bool:
+    """Authorize canonical event-field edits (US-031).
+
+    Mirrors the campaign-edit boundary so the RBAC surface treats
+    event-data editing the same as campaign editing: owner, admin,
+    and analyst roles may edit; everyone else is denied.
+    """
+
+    return role in {Role.OWNER, Role.ADMIN, Role.ANALYST}
+
+
 __all__ = [
     "Role",
     "MembershipState",
@@ -163,4 +174,5 @@ __all__ = [
     "can_review_content",
     "can_edit_campaign",
     "can_edit_lead_pipeline",
+    "can_edit_canonical_event",
 ]

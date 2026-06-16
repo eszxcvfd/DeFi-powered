@@ -81,6 +81,26 @@ class AppSettings(BaseSettings):
         default=False,
         description="If true, discovery uses deterministic mock sources (tests only)",
     )
+    discovery_copilot_provider: str = Field(
+        default="deterministic",
+        description="discovery copilot backend: deterministic | gemini (Google AI Studio)",
+    )
+    google_ai_studio_api_key: str | None = Field(
+        default=None,
+        description="Google AI Studio API key for Gemini discovery copilot",
+    )
+    gemini_model: str = Field(
+        default="gemini-2.0-flash",
+        description="Gemini model id when discovery_copilot_provider=gemini",
+    )
+    expose_e2e_discovery_rss_fixture: bool = Field(
+        default=False,
+        description="Serve /dev/e2e-discovery-rss for Playwright US-032 proof only",
+    )
+    expose_e2e_discovery_website_fixture: bool = Field(
+        default=False,
+        description="Serve /dev/e2e-discovery-website HTML for US-033 Playwright proof",
+    )
     auth_session_ttl_seconds: int = Field(
         default=8 * 60 * 60,
         description="Default session lifetime in seconds (US-027)",

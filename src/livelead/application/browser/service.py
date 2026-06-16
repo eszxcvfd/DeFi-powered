@@ -9,7 +9,11 @@ from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from livelead.application.browser.evidence_provisioning import ensure_playwright_source_for_event
+from livelead.application.browser.evidence_provisioning import ensure_browser_sources_for_event
+from livelead.application.cloakbrowser.policy_service import (
+    CloakBrowserPolicyBlocked,
+    CloakBrowserPolicyService,
+)
 from livelead.domain.browser.action_confirmation import (
     BrowserConfirmationState,
     build_action_preview,
@@ -48,13 +52,8 @@ from livelead.domain.browser.models import (
     LaunchContextKind,
 )
 from livelead.domain.browser.policy import BrowserLaunchDenied, evaluate_browser_launch
-from livelead.application.cloakbrowser.policy_service import (
-    CloakBrowserPolicyBlocked,
-    CloakBrowserPolicyService,
-)
 from livelead.domain.events.source_url_utils import pick_browser_launch_url
 from livelead.domain.sources.policy import evaluate_source_policy
-from livelead.runtime.settings import AppSettings, parse_settings
 from livelead.infrastructure.browser.adapter import (
     execute_confirmation_gated_action,
     execute_read_only_action,
@@ -73,6 +72,7 @@ from livelead.infrastructure.db.repositories.browser_sessions import BrowserSess
 from livelead.infrastructure.db.repositories.events import EventRepository
 from livelead.infrastructure.db.repositories.sources import SourceRepository
 from livelead.infrastructure.db.source_mappers import row_to_source
+from livelead.runtime.settings import AppSettings, parse_settings
 
 logger = logging.getLogger("livelead.browser_session")
 
@@ -163,7 +163,7 @@ class BrowserSessionService:
         if not event:
             raise LookupError("event not found")
         obs = await self._events.list_observations(event_id)
-        await ensure_playwright_source_for_event(
+        await ensure_browser_sources_for_event(
             self._session,
             organization_id=organization_id,
             campaign_id=event.campaign_id,

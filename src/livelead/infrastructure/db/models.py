@@ -3,6 +3,7 @@
 from datetime import datetime
 from uuid import uuid4
 
+import sqlalchemy as sa
 from sqlalchemy import Boolean, DateTime, Float, Integer, String, Text, func
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
@@ -90,9 +91,137 @@ class DiscoveryJobRow(Base):
     progress_json: Mapped[str] = mapped_column(Text, default="{}")
     error_summary: Mapped[str | None] = mapped_column(Text, nullable=True)
     cancel_requested: Mapped[bool] = mapped_column(Boolean, default=False)
+    discovery_schedule_id: Mapped[str | None] = mapped_column(String(36), nullable=True, index=True)
     created_by: Mapped[str | None] = mapped_column(String(128), nullable=True)
     started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class DiscoveryScheduleRow(Base):
+    __tablename__ = "discovery_schedules"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    organization_id: Mapped[str] = mapped_column(String(36), index=True, nullable=False)
+    campaign_id: Mapped[str] = mapped_column(String(36), index=True, nullable=False)
+    enabled_state: Mapped[str] = mapped_column(String(16), default="enabled", index=True)
+    recurrence_json: Mapped[str] = mapped_column(Text, default="{}")
+    source_ids_json: Mapped[str] = mapped_column(Text, default="[]")
+    template_json: Mapped[str] = mapped_column(Text, default="{}")
+    next_run_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True, index=True)
+    last_dispatched_job_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    last_dispatch_outcome: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    overlap_policy: Mapped[str] = mapped_column(String(32), default="skip_while_running")
+    created_by: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+
+class DiscoveryScheduleDispatchRow(Base):
+    __tablename__ = "discovery_schedule_dispatches"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    organization_id: Mapped[str] = mapped_column(String(36), index=True, nullable=False)
+    schedule_id: Mapped[str] = mapped_column(String(36), index=True, nullable=False)
+    outcome: Mapped[str] = mapped_column(String(32), nullable=False)
+    discovery_job_id: Mapped[str | None] = mapped_column(String(36), nullable=True, index=True)
+    detail: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class DiscoveryCopilotResponseRow(Base):
+    __tablename__ = "discovery_copilot_responses"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    organization_id: Mapped[str] = mapped_column(String(36), index=True, nullable=False)
+    campaign_id: Mapped[str] = mapped_column(String(36), index=True, nullable=False)
+    question: Mapped[str] = mapped_column(Text, nullable=False)
+    response_json: Mapped[str] = mapped_column(Text, default="{}")
+    provider_id: Mapped[str] = mapped_column(String(64), default="deterministic-discovery-copilot-v1")
+    model_id: Mapped[str] = mapped_column(String(64), default="grounded-template-v1")
+    confidence: Mapped[float] = mapped_column(Float, default=0.0)
+    accepted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    accepted_by: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    query_expansion_set_id: Mapped[str | None] = mapped_column(String(36), nullable=True, index=True)
+    created_by: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class AiFeedbackEventRow(Base):
+    """Append-only AI feedback history (US-038)."""
+
+    __tablename__ = "ai_feedback_events"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    organization_id: Mapped[str] = mapped_column(String(36), index=True, nullable=False)
+    target_type: Mapped[str] = mapped_column(String(64), nullable=False)
+    target_id: Mapped[str] = mapped_column(String(36), nullable=False)
+    actor_key: Mapped[str] = mapped_column(String(128), nullable=False)
+    state: Mapped[str] = mapped_column(String(32), nullable=False)
+    reason_code: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    note: Mapped[str | None] = mapped_column(Text, nullable=True)
+    prior_state: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class QueryExpansionSetRow(Base):
+    __tablename__ = "query_expansion_sets"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    organization_id: Mapped[str] = mapped_column(String(36), index=True, nullable=False)
+    campaign_id: Mapped[str] = mapped_column(String(36), index=True, nullable=False)
+    status: Mapped[str] = mapped_column(String(32), nullable=False, default="draft")
+    generation_mode: Mapped[str] = mapped_column(String(32), nullable=False, default="rule")
+    variants_json: Mapped[str] = mapped_column(Text, default="[]")
+    version: Mapped[int] = mapped_column(Integer, default=1)
+    created_by: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    approved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    approved_by: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+
+class ScoringSuggestionSetRow(Base):
+    """Governed scoring-weight suggestion sets (US-039)."""
+
+    __tablename__ = "scoring_suggestion_sets"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    organization_id: Mapped[str] = mapped_column(String(36), index=True, nullable=False)
+    campaign_id: Mapped[str] = mapped_column(String(36), index=True, nullable=False)
+    status: Mapped[str] = mapped_column(String(32), nullable=False, default="pending_review")
+    confidence: Mapped[float] = mapped_column(Float, default=0.0)
+    summary: Mapped[str] = mapped_column(Text, default="")
+    caution_notes_json: Mapped[str] = mapped_column(Text, default="[]")
+    assumptions_json: Mapped[str] = mapped_column(Text, default="[]")
+    signals_json: Mapped[str] = mapped_column(Text, default="[]")
+    deltas_json: Mapped[str] = mapped_column(Text, default="[]")
+    current_weights_json: Mapped[str] = mapped_column(Text, default="{}")
+    proposed_weights_json: Mapped[str] = mapped_column(Text, default="{}")
+    generated_by: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    decided_by: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    decided_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    review_note: Mapped[str | None] = mapped_column(Text, nullable=True)
+    weight_snapshot_id: Mapped[str | None] = mapped_column(String(36), nullable=True, index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class CampaignScoringWeightSnapshotRow(Base):
+    """Auditable campaign scoring weight versions (US-039)."""
+
+    __tablename__ = "campaign_scoring_weight_snapshots"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    organization_id: Mapped[str] = mapped_column(String(36), index=True, nullable=False)
+    campaign_id: Mapped[str] = mapped_column(String(36), index=True, nullable=False)
+    weights_json: Mapped[str] = mapped_column(Text, default="{}")
+    source: Mapped[str] = mapped_column(String(64), nullable=False, default="manual")
+    suggestion_set_id: Mapped[str | None] = mapped_column(String(36), nullable=True, index=True)
+    created_by: Mapped[str | None] = mapped_column(String(128), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 
@@ -637,6 +766,126 @@ class NotificationPreferenceRow(Base):
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
+
+
+class EventWatchlistEntryRow(Base):
+    """User-scoped watch entry for a canonical event (US-030).
+
+    Uniqueness on (organization_id, user_id, event_id) means a user
+    can only watch the same event once. Removing the row stops
+    reminder eligibility without mutating the canonical event or any
+    related leads.
+    """
+
+    __tablename__ = "event_watchlist_entries"
+    __table_args__ = (
+        sa.UniqueConstraint(
+            "organization_id",
+            "user_id",
+            "event_id",
+            name="uq_event_watchlist_user_event",
+        ),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    organization_id: Mapped[str] = mapped_column(String(36), nullable=False, index=True)
+    user_id: Mapped[str] = mapped_column(String(36), nullable=False, index=True)
+    event_id: Mapped[str] = mapped_column(String(36), nullable=False, index=True)
+    reminder_at: Mapped[str | None] = mapped_column(String(32), nullable=True, index=True)
+    reminder_note: Mapped[str] = mapped_column(String(500), default="")
+    last_actor_id: Mapped[str] = mapped_column(String(128), default="")
+    last_actor_role: Mapped[str] = mapped_column(String(64), default="")
+    last_action_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+
+class EventWatchlistHistoryRow(Base):
+    """Append-only history of watchlist mutations (US-030).
+
+    Records the actor, the before/after reminder timestamp, and an
+    optional governance note for every watched, unwatched, reminder
+    set, and reminder clear action.
+    """
+
+    __tablename__ = "event_watchlist_history"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    organization_id: Mapped[str] = mapped_column(String(36), nullable=False, index=True)
+    user_id: Mapped[str] = mapped_column(String(36), nullable=False, index=True)
+    event_id: Mapped[str] = mapped_column(String(36), nullable=False, index=True)
+    entry_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    action: Mapped[str] = mapped_column(String(32), nullable=False, index=True)
+    actor_id: Mapped[str] = mapped_column(String(128), nullable=False)
+    actor_role: Mapped[str] = mapped_column(String(64), default="")
+    from_reminder_at: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    to_reminder_at: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    note: Mapped[str] = mapped_column(String(500), default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), index=True)
+
+
+class EventManualOverrideRow(Base):
+    """Field-scoped manual override of a canonical event (US-031).
+
+    A row exists only while the override is active. The unique key
+    is ``(organization_id, event_id, field)`` so the same field
+    can carry at most one override per event. ``source_backed_value``
+    captures the latest normalized value at the time the override
+    was applied so the baseline can be restored exactly when the
+    override is cleared.
+    """
+
+    __tablename__ = "event_manual_overrides"
+    __table_args__ = (
+        sa.UniqueConstraint(
+            "organization_id",
+            "event_id",
+            "field",
+            name="uq_event_manual_overrides_event_field",
+        ),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    organization_id: Mapped[str] = mapped_column(String(36), nullable=False, index=True)
+    event_id: Mapped[str] = mapped_column(String(36), nullable=False, index=True)
+    field: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    source_backed_value: Mapped[str] = mapped_column(Text, default="")
+    override_value: Mapped[str] = mapped_column(Text, default="")
+    value_kind: Mapped[str] = mapped_column(String(16), default="text")
+    note: Mapped[str] = mapped_column(String(500), default="")
+    actor_id: Mapped[str] = mapped_column(String(128), nullable=False)
+    actor_role: Mapped[str] = mapped_column(String(64), default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+
+class EventChangeHistoryRow(Base):
+    """Append-only change history for canonical event edits (US-031).
+
+    One row per edit or clear-override action. The history is
+    immutable from the product layer: nothing in the application
+    code updates or deletes these rows.
+    """
+
+    __tablename__ = "event_change_history"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    organization_id: Mapped[str] = mapped_column(String(36), nullable=False, index=True)
+    event_id: Mapped[str] = mapped_column(String(36), nullable=False, index=True)
+    action: Mapped[str] = mapped_column(String(32), nullable=False, index=True)
+    field: Mapped[str] = mapped_column(String(64), nullable=False)
+    value_kind: Mapped[str] = mapped_column(String(16), default="text")
+    prior_value: Mapped[str] = mapped_column(Text, default="")
+    new_value: Mapped[str] = mapped_column(Text, default="")
+    source_backed_value: Mapped[str] = mapped_column(Text, default="")
+    actor_id: Mapped[str] = mapped_column(String(128), nullable=False)
+    actor_role: Mapped[str] = mapped_column(String(64), default="")
+    reason: Mapped[str] = mapped_column(String(500), default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), index=True)
 
 
 class NotificationDeliveryAttemptRow(Base):

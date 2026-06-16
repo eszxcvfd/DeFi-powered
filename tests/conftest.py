@@ -13,6 +13,8 @@ def anyio_backend():
 def _browser_automation_stub(monkeypatch):
     monkeypatch.setenv("LIVELEAD_BROWSER_AUTOMATION_MODE", "stub")
     monkeypatch.setenv("LIVELEAD_DISCOVERY_USE_MOCK_CONNECTORS", "true")
+    monkeypatch.setenv("LIVELEAD_DISCOVERY_COPILOT_PROVIDER", "deterministic")
+    monkeypatch.delenv("LIVELEAD_GOOGLE_AI_STUDIO_API_KEY", raising=False)
     from livelead.infrastructure.browser.factory import reset_runtime_cache_for_tests
 
     reset_runtime_cache_for_tests()

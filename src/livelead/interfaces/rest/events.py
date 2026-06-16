@@ -3,10 +3,13 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from livelead.application.ai_feedback.service import AiFeedbackService, resolve_feedback_actor_key
 from livelead.application.audience.service import AudienceService
 from livelead.application.browser.service import BrowserSessionService
 from livelead.application.content.service import ContentService
 from livelead.application.engagement.service import EngagementService
+from livelead.application.event_overrides import EventOverrideService
+from livelead.application.event_watchlist import EventWatchlistService
 from livelead.application.leads.service import LeadService
 from livelead.application.scoring.service import ScoringService
 from livelead.domain.content.review import is_ready_for_later_use
@@ -18,6 +21,7 @@ from livelead.infrastructure.db.repositories.events import (
 )
 from livelead.interfaces.auth.tenant_context import TenantContext, get_tenant_context
 from livelead.interfaces.rest.deps import get_db_session
+from livelead.domain.ai_feedback.models import AiFeedbackTargetType
 from livelead.interfaces.rest.events_schemas import (
     AudienceAnalysisSchema,
     AudienceEvidenceSchema,
@@ -34,8 +38,11 @@ from livelead.interfaces.rest.events_schemas import (
     EventScoreSummarySchema,
     EventSourceObservationSchema,
     FieldConfidenceSchema,
+    FieldProvenanceSchema,
     GeneratedContentSummarySchema,
     ScoreComponentSchema,
+    ViewerFeedbackSchema,
+    WatchStateSchema,
 )
 
 router = APIRouter(tags=["events"])
@@ -104,7 +111,19 @@ def _engagement_schema(state) -> EngagementPlanStateSchema:
     )
 
 
-def _audience_schema(analysis) -> AudienceAnalysisSchema:
+def _feedback_schema(proj) -> ViewerFeedbackSchema | None:
+    if proj is None:
+        return None
+    return ViewerFeedbackSchema(
+        state=proj.state,
+        reason_code=proj.reason_code,
+        note=proj.note,
+        updated_at=proj.updated_at,
+    )
+
+
+def _audience_schema(analysis, feedback_by_hypothesis: dict | None = None) -> AudienceAnalysisSchema:
+    fb = feedback_by_hypothesis or {}
     return AudienceAnalysisSchema(
         state=analysis.state,
         strategy_version=analysis.strategy_version,
@@ -127,6 +146,7 @@ def _audience_schema(analysis) -> AudienceAnalysisSchema:
                     )
                     for e in h.evidence
                 ],
+                viewer_feedback=_feedback_schema(fb.get(h.id)),
             )
             for h in analysis.hypotheses
         ],
@@ -153,6 +173,7 @@ async def list_organization_events(
     q: str | None = Query(default=None, max_length=200),
     limit: int = Query(default=100, ge=1, le=500),
     include_score: bool = Query(default=False),
+    watched: bool | None = Query(default=None),
     tenant: TenantContext = Depends(get_tenant_context),
     session: AsyncSession = Depends(get_db_session),
 ):
@@ -179,9 +200,18 @@ async def list_organization_events(
     for e in rows:
         src_ids = await events.distinct_source_ids(e.id)
         source_counts[e.id] = len(src_ids) or 1
+    watch_states = await _project_watch_states(
+        session, tenant, [e.id for e in rows]
+    )
     await session.commit()
     out: list[EventListItemSchema] = []
     for e in rows:
+        watch_state = watch_states.get(e.id)
+        is_watched = bool(watch_state and watch_state.is_watched)
+        if watched is True and not is_watched:
+            continue
+        if watched is False and is_watched:
+            continue
         obs_n = counts.get(e.id, 1)
         out.append(
             EventListItemSchema(
@@ -197,6 +227,7 @@ async def list_organization_events(
                 source_count=source_counts.get(e.id, 1),
                 discovery_job_id=UUID(e.discovery_job_id) if e.discovery_job_id else None,
                 score=_score_summary(score_map.get(e.id)) if include_score else None,
+                watch=watch_state,
                 deferred={"scoring": "available" if include_score else "omitted"},
             )
         )
@@ -210,6 +241,7 @@ async def list_campaign_events(
     source_id: UUID | None = Query(default=None),
     q: str | None = Query(default=None, max_length=200),
     include_score: bool = Query(default=True),
+    watched: bool | None = Query(default=None),
     tenant: TenantContext = Depends(get_tenant_context),
     session: AsyncSession = Depends(get_db_session),
 ):
@@ -235,9 +267,18 @@ async def list_campaign_events(
     for e in rows:
         src_ids = await events.distinct_source_ids(e.id)
         source_counts[e.id] = len(src_ids) or 1
+    watch_states = await _project_watch_states(
+        session, tenant, [e.id for e in rows]
+    )
     await session.commit()
     out: list[EventListItemSchema] = []
     for e in rows:
+        watch_state = watch_states.get(e.id)
+        is_watched = bool(watch_state and watch_state.is_watched)
+        if watched is True and not is_watched:
+            continue
+        if watched is False and is_watched:
+            continue
         obs_n = counts.get(e.id, 1)
         item = EventListItemSchema(
             id=e.id,
@@ -252,6 +293,7 @@ async def list_campaign_events(
             source_count=source_counts.get(e.id, 1),
             discovery_job_id=UUID(e.discovery_job_id) if e.discovery_job_id else None,
             score=_score_summary(score_map.get(e.id)) if include_score else None,
+            watch=watch_state,
             deferred={"scoring": "available" if include_score else "omitted"},
         )
         out.append(item)
@@ -300,11 +342,21 @@ async def get_event(
     src_ids = await events.distinct_source_ids(event_id)
     score = await EventScoreRepository(session).get_current(event_id, event.campaign_id)
     audience = await AudienceService(session).get_or_generate(event_id, tenant.organization_id)
+    actor_key = resolve_feedback_actor_key(actor_id=tenant.actor_id, actor_role=tenant.actor_role)
+    hyp_ids = [h.id for h in audience.hypotheses]
+    feedback_map = await AiFeedbackService(session).project_for_viewer(
+        tenant.organization_id,
+        actor_key,
+        AiFeedbackTargetType.AUDIENCE_HYPOTHESIS,
+        hyp_ids,
+    )
     engagement = await EngagementService(session).get_plan_state(event_id, tenant.organization_id)
     draft_list = await ContentService(session).list_drafts(event_id, tenant.organization_id) or []
     lead_summary = await LeadService(session).linked_summary_for_event(
         event_id, tenant.organization_id
     )
+    watch_state = await _event_watch_state(session, tenant, event_id)
+    overrides = await _event_override_provenance(session, tenant, event_id)
     await session.commit()
     prov = _provenance_schema(row, len(obs) or 1, src_ids)
     return EventDetailSchema(
@@ -332,7 +384,7 @@ async def get_event(
         ],
         score=_score_detail(score) if score else None,
         score_state="ready" if score else "missing",
-        audience=_audience_schema(audience),
+        audience=_audience_schema(audience, feedback_map),
         engagement=_engagement_schema(engagement),
         generated_content=[
             GeneratedContentSummarySchema(
@@ -349,6 +401,8 @@ async def get_event(
             for d in draft_list
         ],
         leads=EventLeadLinkSchema(**lead_summary),
+        watch=watch_state,
+        overrides=overrides,
     )
 
 
@@ -421,3 +475,66 @@ async def rescore_event(
         raise HTTPException(status_code=404, detail="event not found or cannot score")
     await session.commit()
     return await get_event(event_id, tenant, session)
+
+
+async def _resolve_current_user(tenant: TenantContext) -> tuple[UUID, str] | None:
+    """Return (user_id, role) for the current user, or ``None`` if dev-header mode.
+
+    The watchlist is user-scoped. Dev-header mode does not carry a
+    user identity, so the list/detail projections return a neutral
+    "no watch" state instead of inventing one.
+    """
+
+    if not tenant.is_authenticated() or not tenant.actor_id or tenant.role is None:
+        return None
+    try:
+        return UUID(tenant.actor_id), tenant.role.value
+    except (TypeError, ValueError):
+        return None
+
+
+async def _project_watch_states(
+    session: AsyncSession,
+    tenant: TenantContext,
+    event_ids: list[UUID],
+) -> dict[UUID, WatchStateSchema]:
+    identity = await _resolve_current_user(tenant)
+    if identity is None or not event_ids:
+        return {}
+    user_id, _role = identity
+    svc = EventWatchlistService(session)
+    states = await svc.project_state(tenant.organization_id, user_id, event_ids)
+    return {
+        event_id: WatchStateSchema.from_domain(state)
+        for event_id, state in states.items()
+    }
+
+
+async def _event_watch_state(
+    session: AsyncSession,
+    tenant: TenantContext,
+    event_id: UUID,
+) -> WatchStateSchema:
+    identity = await _resolve_current_user(tenant)
+    if identity is None:
+        return WatchStateSchema.unwatched_for(event_id)
+    user_id, _role = identity
+    svc = EventWatchlistService(session)
+    state = await svc.get_state(tenant.organization_id, user_id, event_id)
+    return WatchStateSchema.from_domain(state)
+
+
+async def _event_override_provenance(
+    session: AsyncSession,
+    tenant: TenantContext,
+    event_id: UUID,
+) -> list[FieldProvenanceSchema]:
+    """Return the per-field provenance for one canonical event.
+
+    The projection is the same regardless of the caller's role so
+    every reviewer can see the override badge.
+    """
+
+    svc = EventOverrideService(session)
+    provenance = await svc.project_field_provenance(tenant.organization_id, event_id)
+    return [FieldProvenanceSchema.from_domain(p) for p in provenance]

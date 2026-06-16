@@ -77,6 +77,8 @@ class SourceRepository:
             row.policy_json = policy_to_json(patch["policy"])
         if "secret_ciphertext" in patch:
             row.secret_ciphertext = patch["secret_ciphertext"]
+        if "rate_limit_json" in patch and patch["rate_limit_json"] is not None:
+            row.rate_limit_json = patch["rate_limit_json"]
         row.updated_at = datetime.now(UTC)
         await self._session.flush()
         return row_to_source(row)

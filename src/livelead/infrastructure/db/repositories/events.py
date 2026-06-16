@@ -4,7 +4,7 @@ import json
 from datetime import UTC, datetime
 from uuid import UUID
 
-from sqlalchemy import func, select
+from sqlalchemy import and_, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from livelead.domain.events.models import CanonicalEvent, EventSourceObservation
@@ -162,6 +162,31 @@ class EventRepository:
             )
         )
         return result.scalar_one_or_none() is not None
+
+    async def get_locked_field_values(
+        self, organization_id: UUID, event_id: UUID, fields: list[str]
+    ) -> dict[str, str]:
+        """Return the current override values for any field in ``fields``.
+
+        Used by the ingest path to skip writes for protected fields
+        during rediscovery. Returns an empty dict when no fields are
+        protected.
+        """
+
+        if not fields:
+            return {}
+        from livelead.infrastructure.db.models import EventManualOverrideRow
+
+        result = await self._session.execute(
+            select(EventManualOverrideRow.field, EventManualOverrideRow.override_value).where(
+                and_(
+                    EventManualOverrideRow.organization_id == str(organization_id),
+                    EventManualOverrideRow.event_id == str(event_id),
+                    EventManualOverrideRow.field.in_(fields),
+                )
+            )
+        )
+        return {row[0]: row[1] for row in result.all()}
 
 
 def provenance_from_metadata_json(raw: str) -> dict:

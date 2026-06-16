@@ -31,6 +31,7 @@ class DiscoveryJobRepository:
         criteria_snapshot: dict,
         source_ids: list[str],
         created_by: str,
+        discovery_schedule_id: str | None = None,
     ) -> DiscoveryJobRow:
         now = datetime.now(UTC)
         progress = {
@@ -48,6 +49,7 @@ class DiscoveryJobRepository:
             status=DiscoveryJobStatus.QUEUED.value,
             criteria_snapshot_json=json.dumps(criteria_snapshot),
             progress_json=json.dumps(progress),
+            discovery_schedule_id=discovery_schedule_id,
             created_by=created_by,
             created_at=now,
         )

@@ -32,8 +32,16 @@ from livelead.interfaces.rest.campaign_sources import router as campaign_sources
 from livelead.interfaces.rest.campaigns import router as campaigns_router
 from livelead.interfaces.rest.content import router as content_router
 from livelead.interfaces.rest.dashboard import router as dashboard_router
+from livelead.interfaces.rest.discovery_e2e_fixtures import router as discovery_e2e_fixtures_router
 from livelead.interfaces.rest.discovery_jobs import router as discovery_jobs_router
+from livelead.interfaces.rest.discovery_schedules import router as discovery_schedules_router
+from livelead.interfaces.rest.query_expansion import router as query_expansion_router
+from livelead.interfaces.rest.ai_feedback import router as ai_feedback_router
+from livelead.interfaces.rest.scoring_suggestions import router as scoring_suggestions_router
+from livelead.interfaces.rest.discovery_copilot import router as discovery_copilot_router
 from livelead.interfaces.rest.events import router as events_router
+from livelead.interfaces.rest.event_overrides import router as event_overrides_router
+from livelead.interfaces.rest.event_watchlist import router as event_watchlist_router
 from livelead.interfaces.rest.health import router as health_router
 from livelead.interfaces.rest.leads import router as leads_router
 from livelead.interfaces.rest.middleware import RequestLoggingMiddleware
@@ -116,7 +124,15 @@ def create_app() -> FastAPI:
     app.include_router(campaigns_router)
     app.include_router(admin_connectors_router)
     app.include_router(discovery_jobs_router)
+    app.include_router(discovery_schedules_router)
+    app.include_router(query_expansion_router)
+    app.include_router(discovery_copilot_router)
+    app.include_router(ai_feedback_router)
+    app.include_router(scoring_suggestions_router)
+    app.include_router(discovery_e2e_fixtures_router)
     app.include_router(events_router)
+    app.include_router(event_watchlist_router)
+    app.include_router(event_overrides_router)
     app.include_router(content_router)
     app.include_router(leads_router)
     app.include_router(reminders_router)

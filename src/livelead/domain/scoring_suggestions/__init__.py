@@ -1,0 +1,1 @@
+"""Scoring suggestion domain (US-039)."""

@@ -9,7 +9,7 @@ from livelead.domain.discovery.finding import DiscoveryFinding
 from livelead.domain.discovery.models import SourceRunStatus
 from livelead.domain.sources.models import ConnectorType
 from livelead.infrastructure.connectors.feed_urls import feed_url_for_domain
-from livelead.infrastructure.connectors.http_fetch import fetch_url
+from livelead.infrastructure.connectors.http_fetch import FetchResult, fetch_url
 from livelead.infrastructure.connectors.ics_parse import parse_ics_text
 from livelead.infrastructure.connectors.mock import (
     MockRunResult,
@@ -56,6 +56,7 @@ def run_source_connector(
     exclude_keywords: list[str],
     cancel_check: callable[[], bool],
     use_mock_connectors: bool,
+    fetch_fn: callable[[str], FetchResult] | None = None,
 ) -> tuple[MockRunResult, list[DiscoveryFinding]]:
     if use_mock_connectors or domain.lower().endswith("mock.example.com"):
         result = run_mock_source(domain, cancel_check=cancel_check)
@@ -100,7 +101,8 @@ def run_source_connector(
     if cancel_check():
         return MockRunResult(SourceRunStatus.SKIPPED, 0, 0, "cancelled"), []
 
-    fetched = fetch_url(feed_url)
+    do_fetch = fetch_fn or fetch_url
+    fetched = do_fetch(feed_url)
     if fetched.error or fetched.status >= 400 or not fetched.body:
         err = fetched.error or f"http_{fetched.status}"
         if fetched.status in (401, 403):

@@ -60,10 +60,12 @@ class ConnectorPatchSchema(BaseModel):
     name: str | None = None
     domain: str | None = None
     connector_type: str | None = None
+    automation_engine: str | None = None
     enabled: bool | None = None
     approved: bool | None = None
     policy: PolicySchema | None = None
     secret_plaintext: str | None = None
+    rate_limit_json: dict | None = None
 
 
 class ConnectorViewSchema(BaseModel):
@@ -205,6 +207,10 @@ async def patch_connector(
     if body.approved is True:
         patch["approved_by"] = tenant.actor_role
         patch["approved_at"] = datetime.now(UTC)
+    if body.rate_limit_json is not None:
+        import json as _json
+
+        patch["rate_limit_json"] = _json.dumps(body.rate_limit_json)
     source = await repo.apply_patch(row, patch)
     await session.commit()
     d = evaluate_source_policy(source)

@@ -7,11 +7,21 @@ from datetime import UTC, datetime
 from sqlalchemy import create_engine, select
 from sqlalchemy.orm import Session, sessionmaker
 
-from livelead.application.discovery.campaign_keywords import campaign_keywords
+from livelead.application.discovery.effective_keywords import keywords_from_criteria_snapshot
+from livelead.domain.discovery.browser_recipe import parse_browser_discovery_recipe
+from livelead.domain.discovery.browser_source_readiness import (
+    browser_execution_mode,
+    resolve_browser_discovery_run,
+)
 from livelead.domain.discovery.lifecycle import aggregate_job_status
+from livelead.domain.discovery.live_source_readiness import resolve_live_source_run
 from livelead.domain.discovery.models import DiscoveryJobStatus, SourceRunStatus
+from livelead.domain.sources.models import ConnectorType
+from livelead.domain.sources.policy import evaluate_source_policy
+from livelead.infrastructure.connectors.browser_discovery import run_browser_discovery_connector
 from livelead.infrastructure.connectors.runner import run_source_connector
 from livelead.infrastructure.db.models import Base, DiscoveryJobRow, SourceRow
+from livelead.infrastructure.db.source_mappers import row_to_source
 from livelead.runtime.settings import parse_settings
 
 logger = logging.getLogger("livelead.discovery")
@@ -65,7 +75,9 @@ def run_discovery_job(job_id: str) -> None:
         source_ids = snapshot.get("source_ids", [])
         sources_progress = progress.get("sources", {})
         source_findings: dict[str, list] = {}
-        positive, exclude = campaign_keywords(session, row.campaign_id)
+        positive, exclude = keywords_from_criteria_snapshot(
+            session, row.campaign_id, row.criteria_snapshot_json or "{}"
+        )
 
         for sid in source_ids:
             session.refresh(row)
@@ -97,33 +109,82 @@ def run_discovery_job(job_id: str) -> None:
             )
             if use_mock and not settings.discovery_use_mock_connectors:
                 logger.info("discovery_mock_domain_fixture domain=%s source_id=%s", domain, sid)
-            result, findings = run_source_connector(
-                connector_type=src_row.connector_type,
-                domain=domain,
-                rate_limit_json=src_row.rate_limit_json,
-                positive_keywords=positive,
-                exclude_keywords=exclude,
-                cancel_check=cancel_check,
-                use_mock_connectors=use_mock,
-            )
+
+            governance = row_to_source(src_row)
+            policy_decision = evaluate_source_policy(governance)
+            is_browser = governance.connector_type == ConnectorType.BROWSER
+            if is_browser:
+                pre_status, pre_err, connector_family = resolve_browser_discovery_run(
+                    governance,
+                    policy_decision,
+                    rate_limit_json=src_row.rate_limit_json,
+                )
+                execution_mode = browser_execution_mode(
+                    use_mock=use_mock,
+                    automation_engine=governance.automation_engine,
+                )
+            else:
+                pre_status, pre_err, connector_family = resolve_live_source_run(
+                    governance, policy_decision
+                )
+                execution_mode = "mock" if use_mock else "live_feed_api"
+            if pre_status != SourceRunStatus.PENDING:
+                result_status = pre_status
+                result_items = 0
+                result_pages = 0
+                result_err = pre_err
+                findings = []
+            elif is_browser:
+                recipe, _ = parse_browser_discovery_recipe(src_row.rate_limit_json)
+                assert recipe is not None
+                mock_result, findings = run_browser_discovery_connector(
+                    domain=domain,
+                    recipe=recipe,
+                    positive_keywords=positive,
+                    exclude_keywords=exclude,
+                    cancel_check=cancel_check,
+                    use_mock_connectors=use_mock,
+                    automation_engine=governance.automation_engine,
+                    settings=settings,
+                )
+                result_status = mock_result.status
+                result_items = mock_result.items_found
+                result_pages = mock_result.pages_processed
+                result_err = mock_result.error_summary
+            else:
+                mock_result, findings = run_source_connector(
+                    connector_type=src_row.connector_type,
+                    domain=domain,
+                    rate_limit_json=src_row.rate_limit_json,
+                    positive_keywords=positive,
+                    exclude_keywords=exclude,
+                    cancel_check=cancel_check,
+                    use_mock_connectors=use_mock,
+                )
+                result_status = mock_result.status
+                result_items = mock_result.items_found
+                result_pages = mock_result.pages_processed
+                result_err = mock_result.error_summary
             if findings:
                 source_findings[sid] = findings
             sources_progress[sid] = {
-                "status": result.status.value,
-                "items_found": result.items_found,
-                "pages_processed": result.pages_processed,
-                "error": result.error_summary,
+                "status": result_status.value,
+                "items_found": result_items,
+                "pages_processed": result_pages,
+                "error": result_err,
+                "connector_family": connector_family,
+                "execution_mode": execution_mode,
             }
             progress["sources"] = sources_progress
             progress["events"].append(
                 {
                     "type": "job.source_progress",
                     "source_id": sid,
-                    "status": result.status.value,
-                    "items_found": result.items_found,
+                    "status": result_status.value,
+                    "items_found": result_items,
                 }
             )
-            if result.status == SourceRunStatus.NEEDS_USER_ACTION:
+            if result_status == SourceRunStatus.NEEDS_USER_ACTION:
                 progress["events"].append({"type": "job.needs_user_action", "source_id": sid})
             _save_progress(row, progress, session)
 

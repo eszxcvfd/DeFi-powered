@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Any
 from uuid import UUID
 
 from pydantic import BaseModel, Field
@@ -47,7 +48,40 @@ class EventListItemSchema(BaseModel):
     source_count: int = 1
     discovery_job_id: UUID | None = None
     score: EventScoreSummarySchema | None = None
+    watch: WatchStateSchema | None = None
     deferred: dict[str, str] = Field(default_factory=lambda: {"scoring": "available"})
+
+
+class WatchStateSchema(BaseModel):
+    event_id: UUID
+    is_watched: bool = False
+    watchlist_entry_id: UUID | None = None
+    reminder_at: str | None = None
+    reminder_status: str = "not_watched"
+    reminder_note: str = ""
+    last_action_at: str | None = None
+    reminder_eligible: bool = False
+
+    @classmethod
+    def from_domain(cls, state) -> "WatchStateSchema":
+        return cls(
+            event_id=state.event_id,
+            is_watched=state.is_watched,
+            watchlist_entry_id=state.watchlist_entry_id,
+            reminder_at=state.reminder_at,
+            reminder_status=state.reminder_status.value,
+            reminder_note=state.reminder_note,
+            last_action_at=state.last_action_at,
+            reminder_eligible=state.reminder_eligible,
+        )
+
+    @classmethod
+    def unwatched_for(cls, event_id: UUID) -> "WatchStateSchema":
+        return cls(
+            event_id=event_id,
+            is_watched=False,
+            reminder_status="not_watched",
+        )
 
 
 class EventSourceObservationSchema(BaseModel):
@@ -77,6 +111,13 @@ class AudienceEvidenceSchema(BaseModel):
     source_field: str = ""
 
 
+class ViewerFeedbackSchema(BaseModel):
+    state: str
+    reason_code: str | None = None
+    note: str | None = None
+    updated_at: datetime | None = None
+
+
 class AudienceHypothesisSchema(BaseModel):
     id: UUID
     segment_name: str
@@ -86,6 +127,7 @@ class AudienceHypothesisSchema(BaseModel):
     generated_by: str
     model_version: str
     evidence: list[AudienceEvidenceSchema]
+    viewer_feedback: ViewerFeedbackSchema | None = None
 
 
 class AudienceAnalysisSchema(BaseModel):
@@ -163,6 +205,8 @@ class EventDetailSchema(BaseModel):
     engagement: EngagementPlanStateSchema
     generated_content: list[GeneratedContentSummarySchema] = Field(default_factory=list)
     leads: EventLeadLinkSchema = Field(default_factory=EventLeadLinkSchema)
+    watch: WatchStateSchema
+    overrides: list[FieldProvenanceSchema] = Field(default_factory=list)
     deferred: dict[str, str] = Field(
         default_factory=lambda: {
             "audience_feedback": "planned",
@@ -170,3 +214,25 @@ class EventDetailSchema(BaseModel):
             "browser": "available",
         }
     )
+
+
+class FieldProvenanceSchema(BaseModel):
+    field: str
+    effective_value: Any = None
+    source_value: Any = None
+    is_overridden: bool = False
+    actor_id: str = ""
+    actor_role: str = ""
+    updated_at: str | None = None
+
+    @classmethod
+    def from_domain(cls, item) -> "FieldProvenanceSchema":
+        return cls(
+            field=item.field,
+            effective_value=item.effective_value,
+            source_value=item.source_value,
+            is_overridden=item.is_overridden,
+            actor_id=item.actor_id,
+            actor_role=item.actor_role,
+            updated_at=item.updated_at,
+        )

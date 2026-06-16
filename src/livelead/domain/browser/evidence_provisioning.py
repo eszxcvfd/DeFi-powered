@@ -1,8 +1,11 @@
-"""Auto-provision Playwright browser connector from event source evidence URLs."""
+"""Auto-provision browser connectors from event source evidence URLs (US-033/US-034)."""
 
 from __future__ import annotations
 
 from urllib.parse import urlparse
+
+# Engines provisioned from event evidence for supervised session + discovery paths.
+EVIDENCE_BROWSER_ENGINES: tuple[str, ...] = ("playwright", "selenium")
 
 
 def domain_from_url(url: str) -> str | None:
@@ -20,8 +23,18 @@ def domain_from_url(url: str) -> str | None:
     return host.lower().removeprefix("www.")
 
 
-def playwright_connector_name(domain: str) -> str:
+def browser_connector_name(domain: str, automation_engine: str) -> str:
+    engine = (automation_engine or "playwright").lower()
+    if engine == "selenium":
+        return f"Selenium · {domain}"
+    if engine in ("cloakbrowser", "cloak"):
+        return f"CloakBrowser · {domain}"
     return f"Playwright · {domain}"
+
+
+def playwright_connector_name(domain: str) -> str:
+    """Backward-compatible alias."""
+    return browser_connector_name(domain, "playwright")
 
 
 def auto_provision_domain(event_source_url: str, observation_urls: list[str]) -> str | None:
