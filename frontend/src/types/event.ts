@@ -1,9 +1,22 @@
+import type { ViewerFeedback } from "@/types/aiFeedback";
+
 export type EventScoreSummary = {
   total_score: number | null;
   priority_level: string | null;
   scoring_version: string | null;
   calculated_at: string | null;
   score_state: "missing" | "ready";
+};
+
+export type EventWatchState = {
+  event_id: string;
+  is_watched: boolean;
+  watchlist_entry_id: string | null;
+  reminder_at: string | null;
+  reminder_status: "not_watched" | "scheduled" | "overdue";
+  reminder_note: string;
+  last_action_at: string | null;
+  reminder_eligible: boolean;
 };
 
 export type CampaignEventListItem = {
@@ -19,6 +32,7 @@ export type CampaignEventListItem = {
   source_count: number;
   discovery_job_id: string | null;
   score?: EventScoreSummary | null;
+  watch?: EventWatchState | null;
   deferred?: Record<string, string>;
 };
 
@@ -71,6 +85,7 @@ export type AudienceHypothesis = {
   generated_by: string;
   model_version: string;
   evidence: AudienceEvidence[];
+  viewer_feedback?: ViewerFeedback | null;
 };
 
 export type AudienceAnalysis = {
@@ -142,5 +157,42 @@ export type EventDetail = {
   engagement: EngagementPlanState;
   generated_content: GeneratedContentSummary[];
   leads: EventLeadLink;
+  watch: EventWatchState;
+  overrides: EventFieldProvenance[];
   deferred: Record<string, string>;
+};
+
+export type EventFieldProvenance = {
+  field: string;
+  effective_value: string | number | null;
+  source_value: string | number | null;
+  is_overridden: boolean;
+  actor_id: string;
+  actor_role: string;
+  updated_at: string | null;
+};
+
+export type EventOverrideEntry = {
+  field: string;
+  override_value: string | number | null;
+  source_value: string | number | null;
+  value_kind: "text" | "url" | "timestamp";
+  note: string;
+  actor_id: string;
+  actor_role: string;
+  updated_at: string | null;
+};
+
+export type EventChangeHistoryEntry = {
+  id: string;
+  action: "upserted" | "cleared" | "denied" | "protected_skipped";
+  field: string;
+  value_kind: "text" | "url" | "timestamp";
+  prior_value: string | number | null;
+  new_value: string | number | null;
+  source_value: string | number | null;
+  actor_id: string;
+  actor_role: string;
+  reason: string;
+  created_at: string;
 };

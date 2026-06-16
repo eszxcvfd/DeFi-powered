@@ -6,6 +6,7 @@ export type ListEventsParams = {
   source_id?: string;
   include_score?: boolean;
   limit?: number;
+  watched?: boolean;
 };
 
 function queryString(params: ListEventsParams): string {
@@ -15,12 +16,13 @@ function queryString(params: ListEventsParams): string {
   if (params.source_id) sp.set("source_id", params.source_id);
   if (params.include_score === false) sp.set("include_score", "false");
   if (params.limit != null) sp.set("limit", String(params.limit));
+  if (params.watched !== undefined) sp.set("watched", String(params.watched));
   const s = sp.toString();
   return s ? `?${s}` : "";
 }
 
 export async function listOrganizationEvents(
-  params: Pick<ListEventsParams, "q" | "limit" | "include_score"> = {},
+  params: Pick<ListEventsParams, "q" | "limit" | "include_score" | "watched"> = {},
 ): Promise<CampaignEventListItem[]> {
   const r = await fetch(`/events${queryString(params)}`);
   if (!r.ok) {

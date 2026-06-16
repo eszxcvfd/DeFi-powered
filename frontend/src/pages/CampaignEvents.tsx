@@ -29,16 +29,22 @@ export default function CampaignEvents() {
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState("");
   const [page, setPage] = useState(1);
+  const [watched, setWatched] = useState<"all" | "watched" | "unwatched">("all");
 
   const load = useMemo(
     () => () => {
       if (!id) return Promise.resolve();
-      return listCampaignEvents(id, { q: q.trim() || undefined, include_score: false })
+      const watchedParam = watched === "all" ? undefined : watched === "watched";
+      return listCampaignEvents(id, {
+        q: q.trim() || undefined,
+        include_score: false,
+        watched: watchedParam,
+      })
         .then(setItems)
         .catch((e) => setError(String(e)))
         .finally(() => setLoading(false));
     },
-    [id, q],
+    [id, q, watched],
   );
 
   useEffect(() => {
@@ -48,7 +54,7 @@ export default function CampaignEvents() {
 
   useEffect(() => {
     setPage(1);
-  }, [q]);
+  }, [q, watched]);
 
   const pageItems = paginateSlice(items, page);
 
@@ -71,15 +77,38 @@ export default function CampaignEvents() {
         subtitle="Up to 10 events per page. Use filter then Next for more."
       />
       <div className={PAGE_CONTENT_CLASS}>
-        <AppSection title="Events">
-          <input
-            type="search"
-            placeholder="Filter by title…"
-            className="mb-4 w-full max-w-md border border-slate-200 rounded-md px-3 py-2 text-sm"
-            data-testid="event-list-filter"
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-          />
+        <AppSection
+          title="Events"
+          actions={
+            <Link
+              to="/events/watched"
+              className="text-xs font-medium text-slate-700 underline"
+              data-testid="open-watched-events"
+            >
+              Watched events
+            </Link>
+          }
+        >
+          <div className="flex flex-wrap items-center gap-3 mb-4">
+            <input
+              type="search"
+              placeholder="Filter by title…"
+              className="border border-slate-200 rounded-md px-3 py-2 text-sm w-full max-w-md"
+              data-testid="event-list-filter"
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+            />
+            <select
+              className="text-xs border border-slate-200 rounded-md px-2 py-1.5 bg-white"
+              data-testid="event-list-watched-filter"
+              value={watched}
+              onChange={(e) => setWatched(e.target.value as "all" | "watched" | "unwatched")}
+            >
+              <option value="all">All</option>
+              <option value="watched">Watched</option>
+              <option value="unwatched">Unwatched</option>
+            </select>
+          </div>
           {error && <p className="text-sm text-red-600 mb-4">{error}</p>}
           {items.length === 0 ? (
             <p className="text-sm text-slate-500">No events yet. Run discovery on this campaign first.</p>
@@ -93,6 +122,7 @@ export default function CampaignEvents() {
                       <th className="p-3">Region</th>
                       <th className="p-3">Sources</th>
                       <th className="p-3">Confidence</th>
+                      <th className="p-3">Watched</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 bg-white">
@@ -107,6 +137,27 @@ export default function CampaignEvents() {
                         <td className="p-3 text-slate-600 font-mono text-xs">{ev.source_count ?? "—"}</td>
                         <td className="p-3">
                           <ConfidenceBadge summary={ev.confidence_summary} />
+                        </td>
+                        <td className="p-3">
+                          {ev.watch?.is_watched ? (
+                            <span
+                              className="text-xs font-mono border px-2 py-0.5 rounded-full text-sky-800 bg-sky-50 border-sky-200"
+                              data-testid="event-list-watched"
+                            >
+                              {ev.watch.reminder_status === "overdue"
+                                ? "Overdue"
+                                : ev.watch.reminder_at
+                                  ? "Reminder"
+                                  : "Watching"}
+                            </span>
+                          ) : (
+                            <span
+                              className="text-xs text-slate-400"
+                              data-testid="event-list-not-watched"
+                            >
+                              —
+                            </span>
+                          )}
                         </td>
                       </tr>
                     ))}

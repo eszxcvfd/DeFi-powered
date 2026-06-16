@@ -8,7 +8,7 @@ export function formatApiErrorDetail(detail: unknown, fallback: string): string 
       return "Source linked to this event is no longer in the registry (e.g. after reseed). Pick a browser connector below or add a browser/CloakBrowser source in Admin.";
     }
     if (code === "no_browser_source") {
-      return "Could not provision a Playwright connector from source evidence (check event has a valid https URL).";
+      return "Could not provision browser connectors from source evidence (check event has a valid https URL).";
     }
     return `Launch blocked: ${d.launch_errors.join(", ")}`;
   }

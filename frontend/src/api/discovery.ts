@@ -1,7 +1,14 @@
 import type { DiscoveryJob } from "@/types/discovery";
 
-export async function startDiscovery(campaignId: string): Promise<DiscoveryJob> {
-  const r = await fetch(`/campaigns/${campaignId}/discovery-jobs`, { method: "POST" });
+export async function startDiscovery(
+  campaignId: string,
+  options?: { use_expansion?: boolean },
+): Promise<DiscoveryJob> {
+  const r = await fetch(`/campaigns/${campaignId}/discovery-jobs`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ use_expansion: options?.use_expansion ?? true }),
+  });
   if (!r.ok) throw new Error(await r.text());
   return r.json();
 }

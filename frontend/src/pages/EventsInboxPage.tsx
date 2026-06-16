@@ -54,6 +54,15 @@ export default function EventsInboxPage() {
     <AppPageShell testId="events-inbox">
       <AppPageHeader
         title="Events"
+        actions={
+          <Link
+            to="/events/watched"
+            className="text-xs font-medium text-slate-700 underline"
+            data-testid="open-watched-events"
+          >
+            Watched events
+          </Link>
+        }
         subtitle={
           <>
             Canonical events across campaigns. Per-campaign lists under{" "}
@@ -103,6 +112,7 @@ export default function EventsInboxPage() {
                       <th className="p-3">Campaign</th>
                       <th className="p-3">Region</th>
                       <th className="p-3">Confidence</th>
+                      <th className="p-3">Watched</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 bg-white">
@@ -124,6 +134,22 @@ export default function EventsInboxPage() {
                         <td className="p-3 text-slate-600">{ev.region || "—"}</td>
                         <td className="p-3">
                           <ConfidenceBadge summary={ev.confidence_summary} />
+                        </td>
+                        <td className="p-3">
+                          {ev.watch?.is_watched ? (
+                            <span
+                              className="text-xs font-mono border px-2 py-0.5 rounded-full text-sky-800 bg-sky-50 border-sky-200"
+                              data-testid="events-inbox-watched"
+                            >
+                              {ev.watch.reminder_status === "overdue"
+                                ? "Overdue"
+                                : ev.watch.reminder_at
+                                  ? "Reminder"
+                                  : "Watching"}
+                            </span>
+                          ) : (
+                            <span className="text-xs text-slate-400" data-testid="events-inbox-not-watched">—</span>
+                          )}
                         </td>
                       </tr>
                     ))}

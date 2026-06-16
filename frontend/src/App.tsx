@@ -22,6 +22,7 @@ import LeadsPipelinePage from "./pages/LeadsPipelinePage";
 import NotificationInboxPage from "./pages/NotificationInboxPage";
 import NotificationPreferencesPage from "./pages/NotificationPreferencesPage";
 import SignInPage from "./pages/SignInPage";
+import WatchedEventsPage from "./pages/WatchedEventsPage";
 import { AuthProvider, useAuth } from "./components/AuthProvider";
 
 function RequireAuth({ children }: { children: ReactNode }) {
@@ -71,6 +72,7 @@ export default function App() {
           <Route path="campaigns/:id/events" element={<CampaignEvents />} />
           <Route path="events/:id" element={<EventDetailPage />} />
           <Route path="events/:id/content" element={<EventContentStudioPage />} />
+          <Route path="events/watched" element={<WatchedEventsPage />} />
           <Route path="events" element={<EventsInboxPage />} />
           <Route path="leads" element={<LeadsPipelinePage />} />
           <Route path="browser" element={<BrowserSessionPage />} />

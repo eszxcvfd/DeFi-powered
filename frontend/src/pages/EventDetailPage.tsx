@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { createBrowserSessionForEvent } from "@/api/browserSessions";
+import { putAudienceHypothesisFeedback } from "@/api/aiFeedback";
 import {
   createEngagementPlan,
   getEvent,
@@ -11,14 +12,18 @@ import {
   type BrowserLaunchSourceOption,
 } from "@/api/events";
 import { createLead } from "@/api/leads";
+import EventHistoryPanel from "@/components/EventHistoryPanel";
+import EventOverridePanel from "@/components/EventOverridePanel";
+import EventWatchPanel from "@/components/EventWatchPanel";
 import { AppPageHeader } from "@/components/layout/AppPageHeader";
 import { AppPageShell, PAGE_CONTENT_CLASS } from "@/components/layout/AppPageShell";
 import { AppSection } from "@/components/layout/AppSection";
 import { ListPagination, paginateSlice } from "@/components/ListPagination";
+import { AiFeedbackControls } from "@/components/AiFeedbackControls";
 import { Button } from "@/components/ui/button";
 import { PRIORITY_LABELS } from "@/constants/priority";
 import { SCORING_LABELS } from "@/constants/scoring";
-import type { EventDetail } from "@/types/event";
+import type { EventDetail, EventFieldProvenance, EventWatchState } from "@/types/event";
 import { Loader2, RefreshCw } from "lucide-react";
 
 export default function EventDetailPage() {
@@ -28,6 +33,7 @@ export default function EventDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [rescoring, setRescoring] = useState(false);
   const [audienceLoading, setAudienceLoading] = useState(false);
+  const [audienceFeedbackBusy, setAudienceFeedbackBusy] = useState(false);
   const [engagementLoading, setEngagementLoading] = useState(false);
   const [taskUpdating, setTaskUpdating] = useState<string | null>(null);
   const [leadCreating, setLeadCreating] = useState(false);
@@ -37,11 +43,18 @@ export default function EventDetailPage() {
   const [browserSources, setBrowserSources] = useState<BrowserLaunchSourceOption[]>([]);
   const [selectedBrowserSourceId, setSelectedBrowserSourceId] = useState("");
   const [observationPage, setObservationPage] = useState(1);
+  const [watch, setWatch] = useState<EventWatchState | null>(null);
+  const [overrides, setOverrides] = useState<EventFieldProvenance[]>([]);
+  const [historyRefreshKey, setHistoryRefreshKey] = useState(0);
 
   useEffect(() => {
     if (!id) return;
     getEvent(id)
-      .then(setEvent)
+      .then((ev) => {
+        setEvent(ev);
+        setWatch(ev.watch);
+        setOverrides(ev.overrides ?? []);
+      })
       .catch((e) => setError(String(e)));
     listEventBrowserLaunchSources(id)
       .then((opts) => {
@@ -101,8 +114,42 @@ export default function EventDetailPage() {
         }
       />
       <div className={PAGE_CONTENT_CLASS}>
+        {watch ? (
+          <AppSection
+            title="Watchlist"
+            description="Track this event and optionally schedule a reminder."
+            testId="event-watch-section"
+            className="mb-6"
+          >
+            <EventWatchPanel eventId={event.id} watch={watch} onChanged={setWatch} />
+          </AppSection>
+        ) : null}
         <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
           <div className="xl:col-span-5 space-y-4">
+            <AppSection
+              title="Manual overrides"
+              description="Override canonical fields and protect them from later normalization."
+              testId="event-overrides-panel"
+            >
+              <EventOverridePanel
+                eventId={event.id}
+                provenance={overrides}
+                onChanged={(next) => {
+                  setOverrides(next);
+                  setHistoryRefreshKey((k) => k + 1);
+                }}
+              />
+            </AppSection>
+            <AppSection
+              title="Change history"
+              description="Append-only timeline of edits, clear actions, and protected-field skips."
+              testId="event-history-panel"
+            >
+              <EventHistoryPanel
+                eventId={event.id}
+                refreshKey={historyRefreshKey}
+              />
+            </AppSection>
             <AppSection title="Provenance & confidence" testId="event-provenance-panel">
               <p className="text-sm mb-3">
                 Summary:{" "}
@@ -131,7 +178,7 @@ export default function EventDetailPage() {
 
             <AppSection
               title="Source evidence"
-              description="Browser session uses Playwright connectors from these URLs."
+              description="Browser session can use Playwright or Selenium connectors provisioned from these URLs."
               testId="event-source-evidence"
             >
               <ul className="divide-y divide-slate-100">
@@ -197,7 +244,7 @@ export default function EventDetailPage() {
                   </div>
                 ) : (
                   <p className="text-xs text-slate-500" data-testid="event-browser-launch-wait">
-                    Preparing Playwright connector from evidence… reload if this persists.
+                    Preparing browser connectors (Playwright / Selenium) from evidence… reload if this persists.
                   </p>
                 )}
                 {browserLaunchError && (
@@ -307,6 +354,23 @@ export default function EventDetailPage() {
                           </li>
                         ))}
                       </ul>
+                      <AiFeedbackControls
+                        mode="audience"
+                        current={h.viewer_feedback}
+                        busy={audienceFeedbackBusy}
+                        onSubmit={async (payload) => {
+                          if (!id || !event) return;
+                          setAudienceFeedbackBusy(true);
+                          try {
+                            await putAudienceHypothesisFeedback(h.id, payload);
+                            setEvent(await getEvent(id));
+                          } catch (e) {
+                            setError(String(e));
+                          } finally {
+                            setAudienceFeedbackBusy(false);
+                          }
+                        }}
+                      />
                     </li>
                   ))}
                 </ul>
