@@ -3,6 +3,7 @@ import { useEffect, type ReactNode } from "react";
 import AppLayout from "./AppLayout";
 import AcceptInvitationPage from "./pages/AcceptInvitationPage";
 import AdminMembers from "./pages/AdminMembers";
+import AdminObservability from "./pages/AdminObservability";
 import CampaignDetail from "./pages/CampaignDetail";
 import CampaignList from "./pages/CampaignList";
 import CampaignWizard from "./pages/CampaignWizard";
@@ -81,6 +82,7 @@ export default function App() {
           <Route path="admin/browser-profiles" element={<AdminBrowserProfiles />} />
           <Route path="admin/members" element={<AdminMembers />} />
           <Route path="admin/audit-log" element={<AdminAuditLog />} />
+          <Route path="admin/observability" element={<AdminObservability />} />
           <Route path="notifications" element={<NotificationInboxPage />} />
           <Route path="notification-preferences" element={<NotificationPreferencesPage />} />
         </Route>

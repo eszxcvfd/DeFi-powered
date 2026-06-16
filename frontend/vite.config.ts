@@ -71,7 +71,8 @@ function adminProxyBypass(req: { method?: string; url?: string; headers?: Record
     path === "/admin/connectors" ||
     path === "/admin/browser-profiles" ||
     path === "/admin/members" ||
-    path === "/admin/audit-log"
+    path === "/admin/audit-log" ||
+    path === "/admin/observability"
   ) {
     if (req.method === "GET" && wantsHtml(req)) return path;
     return null;
@@ -80,6 +81,7 @@ function adminProxyBypass(req: { method?: string; url?: string; headers?: Record
   if (path.startsWith("/admin/members/")) return null;
   if (path.startsWith("/admin/cloakbrowser-policy")) return null;
   if (path.startsWith("/admin/audit-logs")) return null;
+  if (path.startsWith("/admin/observability/")) return null;
   if (path.startsWith("/admin/notifications")) return null;
   if (ADMIN_CONNECTOR_ID.test(path)) return null;
   return path;
