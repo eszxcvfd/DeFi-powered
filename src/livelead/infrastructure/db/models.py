@@ -1671,3 +1671,69 @@ class WebhookDeliveryRow(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=sa.func.now()
     )
+
+
+class LeadImportJobRow(Base):
+    """A preview/apply CSV import job (US-050).
+
+    The row carries the bounded slice of metadata
+    needed to reconstruct the preview and audit
+    the apply, plus the file hash and provenance
+    note. The raw CSV blob is never persisted; the
+    preview is the durable surface.
+    """
+
+    __tablename__ = "lead_import_jobs"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    organization_id: Mapped[str] = mapped_column(String(36), nullable=False, index=True)
+    created_by_user_id: Mapped[str] = mapped_column(String(128), nullable=False, default="system")
+    actor_role: Mapped[str] = mapped_column(String(32), nullable=False, default="viewer")
+    filename: Mapped[str] = mapped_column(String(300), nullable=False)
+    file_sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    delimiter: Mapped[str] = mapped_column(String(4), nullable=False)
+    mapping_json: Mapped[str] = mapped_column(Text, nullable=False)
+    provenance_note: Mapped[str] = mapped_column(Text, nullable=False)
+    campaign_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    status: Mapped[str] = mapped_column(String(32), nullable=False)
+    total_rows: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    ready_rows: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    duplicate_rows: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    invalid_rows: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    created_rows: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    skipped_rows: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=sa.func.now()
+    )
+    applied_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class LeadImportRowRow(Base):
+    """One previewed/imported CSV row (US-050).
+
+    The row keeps the normalized payload and the
+    classification result so the preview UI and the
+    apply stage share the same snapshot.
+    """
+
+    __tablename__ = "lead_import_rows"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    import_job_id: Mapped[str] = mapped_column(String(36), nullable=False, index=True)
+    organization_id: Mapped[str] = mapped_column(String(36), nullable=False, index=True)
+    row_number: Mapped[int] = mapped_column(Integer, nullable=False)
+    normalized_payload_json: Mapped[str] = mapped_column(Text, nullable=False)
+    classification: Mapped[str] = mapped_column(
+        String(32), nullable=False, default="invalid"
+    )
+    duplicate_lead_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    duplicate_reason: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    error_codes_json: Mapped[str] = mapped_column(Text, nullable=False, default="[]")
+    created_lead_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=sa.func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=sa.func.now(), onupdate=sa.func.now()
+    )
