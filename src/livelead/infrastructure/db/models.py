@@ -17,6 +17,9 @@ class OrganizationRow(Base):
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
     name: Mapped[str] = mapped_column(String(200), nullable=False)
+    # US-047: internationalization and timezone baseline
+    default_locale: Mapped[str] = mapped_column(String(16), nullable=False, default="en-US", server_default="en-US")
+    default_timezone: Mapped[str] = mapped_column(String(64), nullable=False, default="UTC", server_default="UTC")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 
@@ -66,6 +69,18 @@ class SourceRow(Base):
     policy_json: Mapped[str] = mapped_column(Text, default="{}")
     rate_limit_json: Mapped[str] = mapped_column(Text, default="{}")
     secret_ciphertext: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # US-048 — connector auto-disable metadata. The
+    # fields are read-only from the domain side and
+    # only updated by the bounded `AutoDisableService`.
+    auto_disabled_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    auto_disabled_reason: Mapped[str | None] = mapped_column(
+        Text, nullable=True
+    )
+    auto_disabled_by_event_id: Mapped[str | None] = mapped_column(
+        String(36), nullable=True, index=True
+    )
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
@@ -255,6 +270,10 @@ class EventSourceObservationRow(Base):
     external_id: Mapped[str | None] = mapped_column(String(200), nullable=True)
     discovery_job_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
     content_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    redacted_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    redacted_by: Mapped[str | None] = mapped_column(String(128), nullable=True)
 
 
 class AudienceHypothesisRow(Base):
@@ -390,6 +409,10 @@ class LeadRow(Base):
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
+    anonymized_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    anonymized_by: Mapped[str | None] = mapped_column(String(128), nullable=True)
 
 
 class FollowUpReminderRow(Base):
@@ -483,6 +506,17 @@ class BrowserSessionRow(Base):
     started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     ended_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     browser_profile_id: Mapped[str | None] = mapped_column(String(36), index=True, nullable=True)
+    # US-044 — browser session budget enforcement path. The
+    # `BrowserSessionBudgetEnforcer` records `memory_rss_mb` and
+    # `cpu_pct` samples at session start, every 30 seconds during
+    # the session, and at session end. When a sample exceeds the
+    # configured budget, the session is stopped safely and a
+    # `browser.session.budget_exceeded` audit entry is written.
+    memory_rss_mb: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    cpu_pct: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    budget_breached: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False
+    )
 
 
 class BrowserProfileRow(Base):
@@ -640,6 +674,13 @@ class UserRow(Base):
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
+    disabled_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    disabled_by: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    # US-047: internationalization and timezone baseline
+    locale: Mapped[str] = mapped_column(String(16), nullable=False, default="en-US", server_default="en-US")
+    timezone: Mapped[str] = mapped_column(String(64), nullable=False, default="UTC", server_default="UTC")
 
 
 class OrganizationMembershipRow(Base):
@@ -1165,4 +1206,468 @@ class MetricsExportPolicyRow(Base):
     )
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=sa.func.now(), onupdate=sa.func.now()
+    )
+
+
+class BackupRestoreRunRow(Base):
+    """A single record of a restore attempt (US-043).
+
+    The row carries enough information to prove that a
+    backup can be restored within the RTO target from
+    `NFR-REL-005`. The `manifest_hash` matches the
+    `BackupSnapshot` `manifest_hash` when the restore is
+    faithful; a mismatch means the integrity check
+    failed. Raw payload, secret material, cookies, raw
+    PII, and full connection strings are never stored
+    on this row.
+    """
+
+    __tablename__ = "backup_restore_runs"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    organization_id: Mapped[str] = mapped_column(String(36), nullable=False, index=True)
+    backup_id: Mapped[str] = mapped_column(String(96), nullable=False, index=True)
+    started_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=sa.func.now()
+    )
+    completed_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    status: Mapped[str] = mapped_column(String(32), nullable=False, default="pending")
+    mode: Mapped[str] = mapped_column(String(16), nullable=False, default="dry_run")
+    target_location: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    manifest_hash: Mapped[str] = mapped_column(String(128), nullable=False, default="")
+    row_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    audit_correlation_id: Mapped[str] = mapped_column(
+        String(64), nullable=False, default=""
+    )
+    error: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=sa.func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=sa.func.now(), onupdate=sa.func.now()
+    )
+
+
+class RetentionPolicyRow(Base):
+    """A single per-workspace retention policy (US-043).
+
+    The default `audit_retention_days` follows the
+    `NFR-SEC-008` floor (90 days) and cannot be lowered
+    below the floor. The default
+    `backup_retention_days` is 30 days and is
+    operator-tunable between 1 and 3650 days. The
+    `prune_enabled` flag is the master switch; the
+    retention prune actor refuses to run without an
+    `accepted_by` recorded in the row.
+    """
+
+    __tablename__ = "retention_policies"
+    __table_args__ = (
+        sa.UniqueConstraint(
+            "organization_id",
+            name="uq_retention_policies_org",
+        ),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    organization_id: Mapped[str] = mapped_column(String(36), nullable=False, index=True)
+    backup_retention_days: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=30
+    )
+    audit_retention_days: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=90
+    )
+    prune_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    accepted_by: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    accepted_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=sa.func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=sa.func.now(), onupdate=sa.func.now()
+    )
+
+
+class PerformanceSnapshotRow(Base):
+    """A single record of a load-test scenario result (US-044).
+
+    The row carries `p50_ms`, `p95_ms`, `p99_ms`, `rps`,
+    `error_rate`, and `concurrent_users` for the
+    scenario. The bounded harness runs the
+    deterministic in-process scenario and records a
+    row against the workspace. Raw secret material,
+    cookies, raw PII, and full connection strings
+    are never stored on this row.
+    """
+
+    __tablename__ = "performance_snapshots"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    organization_id: Mapped[str] = mapped_column(String(36), nullable=False, index=True)
+    scenario: Mapped[str] = mapped_column(String(64), nullable=False)
+    started_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=sa.func.now()
+    )
+    completed_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    p50_ms: Mapped[float] = mapped_column(Float, nullable=False, default=0)
+    p95_ms: Mapped[float] = mapped_column(Float, nullable=False, default=0)
+    p99_ms: Mapped[float] = mapped_column(Float, nullable=False, default=0)
+    rps: Mapped[float] = mapped_column(Float, nullable=False, default=0)
+    error_rate: Mapped[float] = mapped_column(Float, nullable=False, default=0)
+    concurrent_users: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=0
+    )
+    audit_correlation_id: Mapped[str] = mapped_column(
+        String(64), nullable=False, default=""
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=sa.func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=sa.func.now(), onupdate=sa.func.now()
+    )
+
+
+class BrowserSessionSampleRow(Base):
+    """A single browser session budget sample (US-044).
+
+    The sample is recorded at session start, every
+    30 seconds during the session, and at session
+    end. When the `budget_pct` exceeds the configured
+    threshold, the session is stopped safely and a
+    `browser.session.budget_exceeded` audit entry
+    is written.
+    """
+
+    __tablename__ = "browser_session_samples"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    organization_id: Mapped[str] = mapped_column(String(36), nullable=False, index=True)
+    session_id: Mapped[str] = mapped_column(String(36), nullable=False, index=True)
+    profile_id: Mapped[str] = mapped_column(String(36), nullable=False)
+    memory_rss_mb: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    cpu_pct: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    budget_pct: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    audited_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=sa.func.now()
+    )
+    breach: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=sa.func.now()
+    )
+
+
+class CalendarExportTokenRow(Base):
+    """A durable bounded calendar export token (US-045).
+
+    The `token_hash` is the only durable artifact; the
+    plaintext is never stored. The row is the
+    authorization artifact for the
+    `GET /calendar-export/{token}.ics` endpoint; the
+    service resolves the user from the row, not from
+    the session.
+    """
+
+    __tablename__ = "calendar_export_tokens"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    organization_id: Mapped[str] = mapped_column(String(36), nullable=False, index=True)
+    user_id: Mapped[str] = mapped_column(String(36), nullable=False, index=True)
+    token_hash: Mapped[str] = mapped_column(String(128), nullable=False, index=True)
+    scope: Mapped[str] = mapped_column(String(32), nullable=False)
+    target_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    filter_json: Mapped[str] = mapped_column(Text, default="")
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    last_used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    use_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    audit_correlation_id: Mapped[str] = mapped_column(String(64), nullable=False, default="")
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=sa.func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=sa.func.now(), onupdate=sa.func.now()
+    )
+
+
+class CalendarExportAuditRow(Base):
+    """A durable record of every calendar export attempt (US-045).
+
+    The row stores a redacted IP address, a bounded
+    user agent, and a request id; the secret-safe
+    payload contract from `US-041` is enforced before
+    persistence. The row is consumed by the operator
+    panel widget and the existing admin audit log
+    filter from `US-026`.
+    """
+
+    __tablename__ = "calendar_export_audits"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    organization_id: Mapped[str] = mapped_column(String(36), nullable=False, index=True)
+    user_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    token_id: Mapped[str | None] = mapped_column(String(36), nullable=True, index=True)
+    scope: Mapped[str] = mapped_column(String(32), nullable=False)
+    event_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    event_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    result: Mapped[str] = mapped_column(String(32), nullable=False)
+    ip_address: Mapped[str] = mapped_column(String(64), nullable=False, default="")
+    user_agent: Mapped[str] = mapped_column(String(256), nullable=False, default="")
+    request_id: Mapped[str] = mapped_column(String(64), nullable=False, default="")
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=sa.func.now()
+    )
+
+
+class ConnectorHealthSnapshotRow(Base):
+    """A single record of a per-connector health
+    computation result (US-046).
+
+    The row carries enough information to answer
+    the `FR-ADM-002` question "is connector X
+    healthy right now?" without reading raw
+    tables. The secret-safe payload contract
+    from `US-041` is enforced before persistence.
+    """
+
+    __tablename__ = "connector_health_snapshots"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    organization_id: Mapped[str] = mapped_column(String(36), nullable=False, index=True)
+    source_id: Mapped[str] = mapped_column(String(36), nullable=False, index=True)
+    connector_type: Mapped[str] = mapped_column(String(32), nullable=False)
+    window_start: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    window_end: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    total_runs: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    success_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    failure_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    success_rate: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
+    p50_latency_ms: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
+    p95_latency_ms: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
+    captcha_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    captcha_rate: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
+    last_run_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    last_error_code: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    last_error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
+    status: Mapped[str] = mapped_column(String(16), nullable=False, default="unknown")
+    audit_correlation_id: Mapped[str] = mapped_column(String(64), nullable=False, default="")
+    computed_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=sa.func.now()
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=sa.func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=sa.func.now(), onupdate=sa.func.now()
+    )
+
+
+class ConnectorHealthErrorRow(Base):
+    """A single record of a recent error rollup
+    (US-046).
+
+    The table is bounded to the most recent N
+    errors per source so a single failing
+    connector cannot fill the table. The
+    secret-safe payload contract from `US-041`
+    is enforced before persistence.
+    """
+
+    __tablename__ = "connector_health_errors"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    organization_id: Mapped[str] = mapped_column(String(36), nullable=False, index=True)
+    source_id: Mapped[str] = mapped_column(String(36), nullable=False, index=True)
+    error_code: Mapped[str] = mapped_column(String(64), nullable=False)
+    error_message: Mapped[str] = mapped_column(Text, nullable=False)
+    first_seen_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    last_seen_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    occurrence_count: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    audit_correlation_id: Mapped[str] = mapped_column(String(64), nullable=False, default="")
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=sa.func.now()
+    )
+
+
+class ConnectorAutoDisableRuleRow(Base):
+    """A per-source auto-disable policy
+    (US-048).
+
+    The row carries enough information for the
+    bounded `AutoDisableService` to evaluate a
+    source against the closed trigger rules
+    without reading raw tables. The secret-safe
+    payload contract from `US-041` is enforced
+    before persistence.
+    """
+
+    __tablename__ = "connector_auto_disable_rules"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    organization_id: Mapped[str] = mapped_column(String(36), nullable=False, index=True)
+    source_id: Mapped[str] = mapped_column(String(36), nullable=False, index=True)
+    trigger: Mapped[str] = mapped_column(String(32), nullable=False)
+    threshold_value: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
+    window_seconds: Mapped[int] = mapped_column(Integer, nullable=False, default=1800)
+    consecutive_breaches: Mapped[int] = mapped_column(Integer, nullable=False, default=3)
+    cooldown_seconds: Mapped[int] = mapped_column(Integer, nullable=False, default=900)
+    enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    deleted_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    created_by: Mapped[str] = mapped_column(String(128), nullable=False, default="system")
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=sa.func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=sa.func.now(), onupdate=sa.func.now()
+    )
+
+
+class ConnectorAutoDisableEventRow(Base):
+    """A per-event auto-disable history
+    (US-048).
+
+    The row records the bounded auto-disable
+    lifecycle. The table is bounded to the most
+    recent N events per source so a flapping
+    connector cannot fill the table. The
+    secret-safe payload contract from `US-041`
+    is enforced before persistence.
+    """
+
+    __tablename__ = "connector_auto_disable_events"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    organization_id: Mapped[str] = mapped_column(String(36), nullable=False, index=True)
+    source_id: Mapped[str] = mapped_column(String(36), nullable=False, index=True)
+    trigger: Mapped[str] = mapped_column(String(32), nullable=False)
+    reason: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    breach_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    window_start: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    window_end: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    status: Mapped[str] = mapped_column(String(16), nullable=False, default="active")
+    alert_event_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    health_snapshot_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    recovery_actor_id: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    recovery_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    recovered_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    audit_correlation_id: Mapped[str] = mapped_column(String(64), nullable=False, default="")
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=sa.func.now()
+    )
+
+
+class WebhookSubscriptionRow(Base):
+    """A per-workspace webhook subscription
+    (US-049).
+
+    The row carries enough information for the
+    bounded `WebhookDeliveryService` to
+    dispatch a delivery against the closed
+    retry policy without reading raw tables.
+    The secret-safe payload contract from
+    `US-041` is enforced before persistence.
+    """
+
+    __tablename__ = "webhook_subscriptions"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    organization_id: Mapped[str] = mapped_column(String(36), nullable=False, index=True)
+    name: Mapped[str] = mapped_column(String(200), nullable=False)
+    target_url: Mapped[str] = mapped_column(String(2048), nullable=False)
+    secret_id: Mapped[str] = mapped_column(String(36), nullable=False, default="")
+    event_types_json: Mapped[str] = mapped_column(Text, nullable=False, default="[]")
+    enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    deleted_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    created_by: Mapped[str] = mapped_column(String(128), nullable=False, default="system")
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=sa.func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=sa.func.now(), onupdate=sa.func.now()
+    )
+    last_rotated_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    last_success_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    last_failure_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+
+
+class WebhookSigningSecretRow(Base):
+    """A per-subscription signing secret
+    (US-049).
+
+    The secret is stored encrypted via the
+    `US-003` `SecretVault`; the bounded
+    service never returns the plaintext in
+    any response payload.
+    """
+
+    __tablename__ = "webhook_signing_secrets"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    organization_id: Mapped[str] = mapped_column(String(36), nullable=False, index=True)
+    subscription_id: Mapped[str] = mapped_column(String(36), nullable=False, index=True)
+    secret_ciphertext: Mapped[str] = mapped_column(Text, nullable=False)
+    version: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=sa.func.now()
+    )
+    rotated_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+
+
+class WebhookDeliveryRow(Base):
+    """A per-delivery webhook history
+    (US-049).
+
+    The table is bounded to the most recent N
+    deliveries per subscription so a flapping
+    subscription cannot fill the table. The
+    secret-safe payload contract from
+    `US-041` is enforced before persistence.
+    """
+
+    __tablename__ = "webhook_deliveries"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    organization_id: Mapped[str] = mapped_column(String(36), nullable=False, index=True)
+    subscription_id: Mapped[str] = mapped_column(String(36), nullable=False, index=True)
+    event_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    event_type: Mapped[str] = mapped_column(String(64), nullable=False)
+    target_url: Mapped[str] = mapped_column(String(2048), nullable=False)
+    payload_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    request_body: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    signature: Mapped[str] = mapped_column(String(256), nullable=False, default="")
+    status: Mapped[str] = mapped_column(String(16), nullable=False, default="pending")
+    attempt_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    next_attempt_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True, index=True
+    )
+    last_attempt_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    last_response_code: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    last_response_message: Mapped[str | None] = mapped_column(Text, nullable=True)
+    delivered_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=sa.func.now()
     )

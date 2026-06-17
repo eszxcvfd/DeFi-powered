@@ -30,6 +30,32 @@ from livelead.interfaces.rest.member_management import (
 )
 from livelead.interfaces.rest.notifications import router as notifications_router
 from livelead.interfaces.rest.observability import router as observability_router
+from livelead.interfaces.rest.metrics_export import (
+    prom_router as metrics_prom_router,
+    router as metrics_export_router,
+)
+from livelead.interfaces.rest.backup_restore import (
+    router as backup_restore_router,
+)
+from livelead.interfaces.rest.performance import (
+    router as performance_router,
+)
+from livelead.interfaces.rest.calendar_export import (
+    router as calendar_export_router,
+)
+from livelead.interfaces.rest.connector_health import (
+    router as connector_health_router,
+)
+from livelead.interfaces.rest.auto_disable import (
+    router as auto_disable_router,
+)
+from livelead.interfaces.rest.webhooks import (
+    router as webhooks_router,
+)
+from livelead.interfaces.rest.i18n import (
+    admin_router as i18n_admin_router,
+    me_router as i18n_me_router,
+)
 from livelead.interfaces.rest.browser_profiles import router as browser_profiles_router
 from livelead.interfaces.rest.cloakbrowser_policy import router as cloakbrowser_policy_router
 from livelead.interfaces.rest.browser_sessions import router as browser_sessions_router
@@ -136,6 +162,12 @@ def create_app() -> FastAPI:
     app.include_router(ai_feedback_router)
     app.include_router(scoring_suggestions_router)
     app.include_router(discovery_e2e_fixtures_router)
+    # US-045 — register the calendar export router before
+    # the events router so the `/events/{event_id}.ics`
+    # and `/events.ics` routes win the Starlette
+    # first-match lookup against the existing
+    # `/events/{event_id}` and `/events` handlers.
+    app.include_router(calendar_export_router)
     app.include_router(events_router)
     app.include_router(event_watchlist_router)
     app.include_router(event_overrides_router)
@@ -156,6 +188,15 @@ def create_app() -> FastAPI:
     app.include_router(admin_cutover_router)
     app.include_router(notifications_router)
     app.include_router(observability_router)
+    app.include_router(metrics_export_router)
+    app.include_router(metrics_prom_router)
+    app.include_router(backup_restore_router)
+    app.include_router(performance_router)
+    app.include_router(connector_health_router)
+    app.include_router(auto_disable_router)
+    app.include_router(webhooks_router)
+    app.include_router(i18n_me_router)
+    app.include_router(i18n_admin_router)
     return app
 
 

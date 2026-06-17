@@ -150,6 +150,99 @@ class MetricRegistry:
             secret_safety="safe",
             description="Wall-clock time for one metrics exporter tick in milliseconds.",
         ),
+        # US-044 — performance baseline and SLO guardrails. These
+        # descriptors mirror the closed `AlertMetric` enum from
+        # `US-041` and the closed `PerformanceMetric` enum from
+        # `US-044`. The exporter and the SLO alert evaluator consume
+        # the same descriptors so the two surfaces cannot drift
+        # apart.
+        MetricDescriptor(
+            name="api.read.latency_ms",
+            unit="ms",
+            type="histogram",
+            cardinality_budget=16,
+            secret_safety="safe",
+            description="API read latency in milliseconds (NFR-PERF-001).",
+        ),
+        MetricDescriptor(
+            name="event.list.pagination.latency_ms",
+            unit="ms",
+            type="histogram",
+            cardinality_budget=16,
+            secret_safety="safe",
+            description="Event list pagination latency in milliseconds (NFR-PERF-002).",
+        ),
+        MetricDescriptor(
+            name="discovery.first_progress_ms",
+            unit="ms",
+            type="histogram",
+            cardinality_budget=16,
+            secret_safety="safe",
+            description="Discovery job first progress latency in milliseconds (NFR-PERF-003).",
+        ),
+        MetricDescriptor(
+            name="concurrency.users",
+            unit="count",
+            type="gauge",
+            cardinality_budget=1,
+            secret_safety="safe",
+            description="Concurrent user count (NFR-PERF-004).",
+        ),
+        MetricDescriptor(
+            name="browser.session.budget_pct",
+            unit="pct",
+            type="gauge",
+            cardinality_budget=32,
+            secret_safety="safe",
+            description="Browser session budget utilisation in percent (NFR-PERF-005).",
+        ),
+        # US-046 — connector health surface. These
+        # descriptors mirror the `ConnectorHealthMetrics`
+        # dataclass and the `AlertMetric` enum from
+        # `US-041`. The exporter and the alert evaluator
+        # consume the same descriptors so the bounded
+        # surface and the bounded signals cannot drift
+        # apart.
+        MetricDescriptor(
+            name="connector.success_rate",
+            unit="ratio",
+            type="gauge",
+            cardinality_budget=64,
+            secret_safety="safe",
+            description="Per-connector success rate over the bounded window (FR-ADM-002).",
+        ),
+        MetricDescriptor(
+            name="connector.p95_latency_ms",
+            unit="ms",
+            type="histogram",
+            cardinality_budget=64,
+            secret_safety="safe",
+            description="Per-connector p95 latency over the bounded window (FR-ADM-002).",
+        ),
+        MetricDescriptor(
+            name="connector.captcha_rate",
+            unit="ratio",
+            type="gauge",
+            cardinality_budget=64,
+            secret_safety="safe",
+            description="Per-connector CAPTCHA detection rate over the bounded window (FR-ADM-002).",
+        ),
+        MetricDescriptor(
+            name="connector.runs_total",
+            unit="count",
+            type="counter",
+            cardinality_budget=64,
+            secret_safety="safe",
+            description="Per-connector total run count over the bounded window (FR-ADM-002).",
+        ),
+        MetricDescriptor(
+            name="connector.last_run_at_seconds",
+            unit="seconds",
+            type="gauge",
+            cardinality_budget=64,
+            secret_safety="safe",
+            description="Per-connector last run timestamp in seconds since the epoch (FR-ADM-002).",
+        ),
     )
 
     def __init__(

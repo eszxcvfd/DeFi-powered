@@ -48,6 +48,27 @@ from livelead.interfaces.rest.events_schemas import (
 router = APIRouter(tags=["events"])
 
 
+def _safe_uuid(value: str | None) -> UUID | None:
+    """Parse a string as UUID, returning None for
+    empty or malformed values.
+
+    The pre-existing `events.discovery_job_id`
+    column carries free-form ids from US-004
+    manual discovery (`manual-job-id` is a real
+    fixture value); the column is not constrained
+    to UUIDs at the SQL level. The bounded
+    surface returns None for values that the
+    `UUID` constructor rejects so a malformed
+    fixture never crashes the list endpoint.
+    """
+    if not value:
+        return None
+    try:
+        return UUID(str(value))
+    except (ValueError, AttributeError, TypeError):
+        return None
+
+
 def _score_summary(score) -> EventScoreSummarySchema:
     if not score:
         return EventScoreSummarySchema(score_state="missing")
@@ -225,7 +246,7 @@ async def list_organization_events(
                 confidence_summary=e.confidence_summary,
                 observation_count=obs_n,
                 source_count=source_counts.get(e.id, 1),
-                discovery_job_id=UUID(e.discovery_job_id) if e.discovery_job_id else None,
+                discovery_job_id=_safe_uuid(e.discovery_job_id),
                 score=_score_summary(score_map.get(e.id)) if include_score else None,
                 watch=watch_state,
                 deferred={"scoring": "available" if include_score else "omitted"},
@@ -291,7 +312,7 @@ async def list_campaign_events(
             confidence_summary=e.confidence_summary,
             observation_count=obs_n,
             source_count=source_counts.get(e.id, 1),
-            discovery_job_id=UUID(e.discovery_job_id) if e.discovery_job_id else None,
+            discovery_job_id=_safe_uuid(e.discovery_job_id),
             score=_score_summary(score_map.get(e.id)) if include_score else None,
             watch=watch_state,
             deferred={"scoring": "available" if include_score else "omitted"},
@@ -369,7 +390,7 @@ async def get_event(
         organizer=event.organizer,
         region=event.region,
         starts_at=event.starts_at,
-        discovery_job_id=UUID(event.discovery_job_id) if event.discovery_job_id else None,
+        discovery_job_id=_safe_uuid(event.discovery_job_id),
         provenance=prov,
         observations=[
             EventSourceObservationSchema(
@@ -378,7 +399,7 @@ async def get_event(
                 source_url=o.source_url,
                 observed_at=o.observed_at,
                 raw_title=o.raw_title,
-                discovery_job_id=UUID(o.discovery_job_id) if o.discovery_job_id else None,
+                discovery_job_id=_safe_uuid(o.discovery_job_id),
             )
             for o in obs
         ],

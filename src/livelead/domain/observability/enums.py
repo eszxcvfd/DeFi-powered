@@ -26,6 +26,30 @@ class AlertMetric(StrEnum):
     DISCOVERY_NEEDS_USER_ACTION_RATE = "discovery.needs_user_action_rate"
     BROWSER_CRASH_LOOP = "browser.crash_loop"
     AUDIT_RETENTION_BREACH_RISK = "audit.retention_breach_risk"
+    # US-044 — performance baseline and SLO guardrails. These
+    # metrics are exported by the bounded load-test harness and
+    # consumed by the seed SLO alert rules. New metrics must be
+    # added to the `PerformanceMetric` enum from `US-044` and to
+    # the `MetricRegistry` from `US-042` in the same change.
+    API_READ_LATENCY_MS = "api.read.latency_ms"
+    EVENT_LIST_PAGINATION_LATENCY_MS = "event.list.pagination.latency_ms"
+    DISCOVERY_FIRST_PROGRESS_MS = "discovery.first_progress_ms"
+    CONCURRENCY_USERS = "concurrency.users"
+    BROWSER_SESSION_BUDGET_PCT = "browser.session.budget_pct"
+    # US-046 — connector health surface. These
+    # metrics are exported by the
+    # `ConnectorHealthComputer` and consumed by
+    # the `US-041` `AlertEvaluator` and the
+    # `US-042` `MetricsExporter`. New metrics
+    # must be added to the closed
+    # `ConnectorHealthMetrics` dataclass and to
+    # the `MetricRegistry` from `US-042` in the
+    # same change.
+    CONNECTOR_SUCCESS_RATE = "connector.success_rate"
+    CONNECTOR_P95_LATENCY_MS = "connector.p95_latency_ms"
+    CONNECTOR_CAPTCHA_RATE = "connector.captcha_rate"
+    CONNECTOR_RUNS_TOTAL = "connector.runs_total"
+    CONNECTOR_LAST_RUN_AT_SECONDS = "connector.last_run_at_seconds"
 
 
 class AlertOperator(StrEnum):

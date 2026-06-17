@@ -93,6 +93,85 @@ class AuditAction(StrEnum):
     METRICS_EXPORTED = "metrics.exported"
     METRICS_EXPORT_REJECTED = "metrics.export_rejected"
     METRICS_TEST_RUN = "metrics.test_run"
+    BACKUP_RESTORE_REHEARSED = "backup.restore.rehearsed"
+    BACKUP_RESTORE_SUCCEEDED = "backup.restore.succeeded"
+    BACKUP_RESTORE_FAILED = "backup.restore.failed"
+    BACKUP_RETENTION_PRUNED = "backup.retention.pruned"
+    DATA_LEAD_DELETED = "data.lead.deleted"
+    DATA_USER_DELETED = "data.user.deleted"
+    DATA_OBSERVATION_DELETED = "data.observation.deleted"
+    PERFORMANCE_SCENARIO_COMPLETED = "performance.scenario.completed"
+    PERFORMANCE_SCENARIO_REJECTED = "performance.scenario.rejected"
+    BROWSER_SESSION_BUDGET_EXCEEDED = "browser.session.budget_exceeded"
+    # US-045 — event calendar export (ICS) baseline. Each
+    # event type maps to a single calendar export surface
+    # path. The audit entry shape is the same as the
+    # existing surface; the secret-safe payload contract
+    # from `US-041` is enforced before persistence.
+    CALENDAR_EVENT_EXPORTED = "calendar.event.exported"
+    CALENDAR_WATCHLIST_EXPORTED = "calendar.watchlist.exported"
+    CALENDAR_FILTER_EXPORTED = "calendar.filter.exported"
+    CALENDAR_TOKEN_MINTED = "calendar.token.minted"
+    CALENDAR_TOKEN_REVOKED = "calendar.token.revoked"
+    CALENDAR_TOKEN_USED = "calendar.token.used"
+    # US-046 — connector health surface baseline. Each
+    # event type maps to a single connector health
+    # surface path. The audit entry shape reuses the
+    # existing `AuditEntryRow` from `US-026`; the
+    # secret-safe payload contract from `US-041` is
+    # enforced before persistence.
+    CONNECTOR_HEALTH_SNAPSHOT_COMPUTED = "connector.health.snapshot.computed"
+    CONNECTOR_HEALTH_SUMMARY_REQUESTED = "connector.health.summary.requested"
+    CONNECTOR_HEALTH_ERRORS_REQUESTED = "connector.health.errors.requested"
+    CONNECTOR_HEALTH_SNAPSHOT_REJECTED = "connector.health.snapshot.rejected"
+    # US-047 — internationalization and timezone baseline. Each
+    # event type maps to a single i18n surface path. The
+    # audit entry shape reuses the existing `AuditEntryRow`
+    # from `US-026`; the secret-safe payload contract from
+    # `US-041` is enforced before persistence.
+    USER_LOCALE_UPDATED = "user.locale.updated"
+    ORGANIZATION_LOCALE_UPDATED = "organization.locale.updated"
+    LOCALE_UNSUPPORTED_REJECTED = "locale.unsupported.rejected"
+    # US-048 — connector auto-disable and policy recovery
+    # baseline. Each event type maps to a single
+    # auto-disable surface path. The audit entry shape
+    # reuses the existing `AuditEntryRow` from `US-026`;
+    # the secret-safe payload contract from `US-041` is
+    # enforced before persistence.
+    CONNECTOR_AUTO_DISABLE_RULE_CREATED = "connector.auto_disable.rule.created"
+    CONNECTOR_AUTO_DISABLE_RULE_UPDATED = "connector.auto_disable.rule.updated"
+    CONNECTOR_AUTO_DISABLE_RULE_DELETED = "connector.auto_disable.rule.deleted"
+    CONNECTOR_AUTO_DISABLE_TRIGGERED = "connector.auto_disable.triggered"
+    CONNECTOR_AUTO_DISABLE_RECOVERED = "connector.auto_disable.recovered"
+    CONNECTOR_AUTO_DISABLE_RECOVERY_RESOLVED = "connector.auto_disable.recovery.resolved"
+    CONNECTOR_AUTO_DISABLE_RECOVERY_REJECTED = "connector.auto_disable.recovery.rejected"
+    # US-049 — governed webhook delivery baseline. Each
+    # event type maps to a single webhook surface
+    # path. The audit entry shape reuses the existing
+    # `AuditEntryRow` from `US-026`; the secret-safe
+    # payload contract from `US-041` is enforced
+    # before persistence.
+    WEBHOOK_SUBSCRIPTION_CREATED = "webhook.subscription.created"
+    WEBHOOK_SUBSCRIPTION_UPDATED = "webhook.subscription.updated"
+    WEBHOOK_SUBSCRIPTION_DELETED = "webhook.subscription.deleted"
+    WEBHOOK_SUBSCRIPTION_SECRET_ROTATED = "webhook.subscription.secret_rotated"
+    WEBHOOK_SUBSCRIPTION_TEST_SENT = "webhook.subscription.test_sent"
+    WEBHOOK_DELIVERY_SUCCEEDED = "webhook.delivery.succeeded"
+    WEBHOOK_DELIVERY_FAILED = "webhook.delivery.failed"
+    WEBHOOK_DELIVERY_DEAD_LETTER = "webhook.delivery.dead_letter"
+    WEBHOOK_DELIVERY_REJECTED = "webhook.delivery.rejected"
+    WEBHOOK_DELIVERY_RETRIED = "webhook.delivery.retried"
+    # US-050 — lead CSV import/export baseline. Each
+    # event type maps to a single lead import/export
+    # surface path. The audit entry shape reuses the
+    # existing `AuditEntryRow` from `US-026`; the
+    # secret-safe payload contract from `US-041` is
+    # enforced before persistence.
+    LEAD_IMPORT_PREVIEWED = "lead.import.previewed"
+    LEAD_IMPORT_APPLIED = "lead.import.applied"
+    LEAD_IMPORT_DENIED = "lead.import.denied"
+    LEAD_EXPORT_DOWNLOADED = "lead.export.downloaded"
+    LEAD_EXPORT_DENIED = "lead.export.denied"
 
 
 class AuditTargetType(StrEnum):
@@ -126,3 +205,16 @@ class AuditTargetType(StrEnum):
     BACKUP_SNAPSHOT = "backup_snapshot"
     WORKER = "worker"
     METRICS_EXPORT_POLICY = "metrics_export_policy"
+    BACKUP_RESTORE_RUN = "backup_restore_run"
+    RETENTION_POLICY = "retention_policy"
+    PERFORMANCE_SNAPSHOT = "performance_snapshot"
+    CALENDAR_EXPORT_TOKEN = "calendar_export_token"
+    CALENDAR_EXPORT_AUDIT = "calendar_export_audit"
+    CONNECTOR_HEALTH_SNAPSHOT = "connector_health_snapshot"
+    CONNECTOR_HEALTH_ERROR = "connector_health_error"
+    CONNECTOR_AUTO_DISABLE_RULE = "connector_auto_disable_rule"
+    CONNECTOR_AUTO_DISABLE_EVENT = "connector_auto_disable_event"
+    WEBHOOK_SUBSCRIPTION = "webhook_subscription"
+    WEBHOOK_DELIVERY = "webhook_delivery"
+    LEAD_IMPORT_JOB = "lead_import_job"
+    LEAD_IMPORT_ROW = "lead_import_row"
