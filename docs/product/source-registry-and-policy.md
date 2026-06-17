@@ -26,6 +26,10 @@ This product slice covers:
 - Secret-handling expectations for API keys, cookies, and credentials.
 - Admin-facing visibility into connector readiness and policy state through an
   initial `/admin/connectors` management surface.
+- Connector health aggregation. The first connector health surface is defined
+  in `docs/product/connector-health-surface.md`; the bounded surface extends the
+  source catalog with a per-connector health snapshot, a recent-errors rollup,
+  and a closed `ConnectorHealthStatus` enum.
 - Connector policy metadata that later browser-session stories can use to decide
   which read-only actions are allowlisted.
 

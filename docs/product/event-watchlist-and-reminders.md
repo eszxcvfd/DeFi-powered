@@ -93,3 +93,25 @@ The first watchlist slice should extend existing event-review surfaces:
 - Platform proof should keep the watchlist verification path wired into the
   Harness matrix before calendar export, bulk actions, or shared-team tracking
   stories build on it.
+
+## Related Product Docs
+
+- `docs/product/event-calendar-export.md` (`US-045` product contract; the
+  calendar export slice extends this watchlist with a tokenized ICS feed
+  and a calendar `STATUS` mapping; the watchlist ownership and reminder
+  semantics stay stable).
+- `docs/product/event-results-and-review.md` (`US-005` contract; the
+  calendar export slice consumes the canonical event model).
+- `docs/product/report-export-and-printing.md` (`US-019` contract; the
+  calendar export slice reuses the export-token pattern and the audit
+  entry shape).
+- `docs/product/audit-log-and-governance.md` (`US-026` contract; the
+  calendar export slice emits `calendar.*` audit entries with the same
+  secret-safe payload contract).
+- `docs/product/real-environment-cutover-and-live-operations.md`
+  (`US-040` contract; the calendar export token TTL is bounded by the
+  `EnvironmentMode`).
+- `docs/stories/epics/E01-discovery-mvp/US-045-event-calendar-export-ics-baseline/`
+  (this story packet).
+- `docs/decisions/0023-event-calendar-export-ics-baseline.md` (companion
+  decision record).

@@ -15,6 +15,7 @@ the work is selected or when a product decision needs a durable place to land.
 | E03 Lead And Reporting | Lead pipeline, duplicate detection, activities, follow-up reminders, dashboard, funnel, source performance, export. | active |
 | E04 Browser-Assisted Operations | Supporting browser session governance, confirmation workflow, screenshots/traces, profile lifecycle, and optional CloakBrowser adapter review for permitted-source access. | active |
 | E05 Hardening | Performance, security, observability, backup/restore, UAT, and production readiness. | active |
+| E06 Calendar Export | Calendar export (ICS) for events, watchlists, and event filter sets, with tokenized feed, audit entry shape, and follow-on calendar auth and shared-watchlist seam. | active |
 
 ## First Story Candidates
 
@@ -147,7 +148,7 @@ the work is selected or when a product decision needs a durable place to land.
   `docs/ops/pilot-live-cutover-runbook.md`;
   `docs/ops/pilot-live-pause-runbook.md`;
   `docs/ops/pilot-live-rollback-runbook.md`.
-- `US-041-operational-observability-and-alerting-baseline`: **planned** —
+- `US-041-operational-observability-and-alerting-baseline`: **implemented** —
   first bounded observability and alerting slice that consumes the
   `US-040` runtime readiness contract and the `US-026` audit log; durable
   `AlertRule` and `AlertEvent` tables, secret-safe payload helper, evaluator
@@ -158,7 +159,7 @@ the work is selected or when a product decision needs a durable place to land.
   breach risk; `docs/stories/epics/E05-hardening/US-041-operational-observability-and-alerting-baseline/`;
   `docs/product/observability-and-alerting.md`;
   `docs/decisions/0019-observability-and-alerting-baseline.md`.
-- `US-042-external-metrics-pipeline-baseline`: **planned** — first
+- `US-042-external-metrics-pipeline-baseline`: **implemented** — first
   external metrics pipeline slice that closes the deferred follow-up
   in `0019` and ships a vendor-agnostic, local-first export side for
   the `US-041` observability contract; durable `MetricsExportPolicy`
@@ -173,3 +174,185 @@ the work is selected or when a product decision needs a durable place to land.
   `docs/stories/epics/E05-hardening/US-042-external-metrics-pipeline-baseline/`;
   `docs/product/external-metrics-and-tracing.md`;
   `docs/decisions/0020-external-metrics-pipeline-baseline.md`.
+- `US-043-backup-and-restore-operations-baseline`: **implemented** —
+  first bounded backup and restore operations slice that closes the
+  gap left by `US-040` (the `BackupSnapshot` table exists but no
+  restore workflow) and the deferred restore rehearsal commitment
+  referenced by `US-041` and `US-042`; durable `BackupRestoreRun` and
+  `RetentionPolicy` tables, bounded `BackupRestoreService` with
+  `dry_run_restore`, `schedule_rehearsal`, `restore_backup`, and
+  `prune_expired_backups`, governed `DataDeletionService` for lead,
+  user, and source observation deletion, secret-safe payload reuse
+  from `US-041`, owner/admin REST surface for restore, retention,
+  and data-deletion, restore rehearsal actor, retention prune actor,
+  operator panel widget, and `docs/ops/backup-restore-runbook.md`;
+  addresses `NFR-REL-005` (RPO 24h, RTO 8h), `FR-ADM-004`, and
+  `FR-ADM-005`; `docs/stories/epics/E05-hardening/US-043-backup-and-restore-operations-baseline/`;
+  `docs/product/backup-and-restore-operations.md`;
+  `docs/decisions/0021-backup-and-restore-operations-baseline.md`.
+- `US-046-connector-health-surface-baseline`: **planned** — first
+  bounded connector health surface slice that closes `FR-ADM-002`
+  and the explicit follow-up committed in `0019`; durable
+  `connector_health_snapshots` and `connector_health_errors` tables,
+  closed `ConnectorHealthStatus` enum (`healthy`, `degraded`,
+  `unhealthy`, `unknown`), bounded `ConnectorHealthService` with
+  `compute_snapshot`, `list_snapshots`, `build_summary`, and
+  `list_recent_errors`, `ConnectorHealthComputer` that derives the
+  bounded metrics from `discovery_jobs` and `audit_entries`, bounded
+  window by the `EnvironmentMode` from `US-040` (max 24 hours in
+  `pilot_live`, max 1 hour in `test_like`), secret-safe payload
+  reuse from `US-041`, owner/admin-only REST surface
+  (`GET /admin/connectors/health/summary`,
+  `GET /admin/connectors/health/snapshots`,
+  `POST /admin/connectors/health/snapshots:compute`,
+  `GET /admin/connectors/{source_id}/health/errors`),
+  `MetricRegistry` extension from `US-042`, `AlertMetric` enum
+  extension from `US-041`, operator panel widget, in-app inbox
+  entries from `US-029`, and `docs/ops/connector-health-runbook.md`;
+  `docs/stories/epics/E05-hardening/US-046-connector-health-surface-baseline/`;
+  `docs/product/connector-health-surface.md`;
+  `docs/decisions/0024-connector-health-surface-baseline.md`.
+- `US-045-event-calendar-export-ics-baseline`: **implemented** — first
+  bounded calendar export (ICS) slice that turns `FR-EVT-005` and the
+  explicit gap from `US-030` design into a documented contract,
+  a per-user ICS export endpoint, a tokenized calendar feed, and
+  a reusable export-token surface; durable `CalendarExportToken`
+  and `CalendarExportAudit` tables, closed `CalendarScope` enum
+  (`event`, `watchlist`, `event_filter`), bounded
+  `CalendarExportService` with `build_event_ics`,
+  `build_watchlist_ics`, `build_filter_ics`, `mint_token`,
+  `revoke_token`, and `resolve_token`, calendar `STATUS` mapping
+  (`UPCOMING` → `TENTATIVE`, `LIVE` → `CONFIRMED`, `ENDED` →
+  `CANCELLED`), token TTL bound by the `EnvironmentMode` from
+  `US-040` (max 90 days in `pilot_live`, max 30 days in
+  `test_like`), secret-safe payload reuse from `US-041`, current-
+  user REST surface (`GET /events/{id}.ics`,
+  `GET /watchlist/events.ics`, `GET /events.ics`,
+  `POST /calendar-export-tokens`,
+  `GET /calendar-export-tokens`,
+  `DELETE /calendar-export-tokens/{id}`) and tokenized REST
+  surface (`GET /calendar-export/{token}.ics`), calendar export
+  modal, calendar exports panel, in-app inbox entries from
+  `US-029`, and `docs/ops/calendar-export-runbook.md`;
+  `docs/stories/epics/E01-discovery-mvp/US-045-event-calendar-export-ics-baseline/`;
+  `docs/product/event-calendar-export.md`;
+  `docs/decisions/0023-event-calendar-export-ics-baseline.md`.
+- `US-044-performance-baseline-and-slo-guardrails`: **implemented** —
+  first bounded performance baseline and SLO guardrails slice
+  that addresses `NFR-PERF-001..005` (API read latency, event
+  list pagination, discovery job first progress, concurrency
+  cap, browser session budget); durable `PerformanceSnapshot`
+  table, closed `PerformanceMetric` enum extending the `US-041`
+  `AlertMetric` enum and the `US-042` `MetricRegistry`, seed
+  SLO alert rule set in the `US-041` migration, bounded
+  `PerformanceBaselineService` with `run_scenario`,
+  `list_snapshots`, and `build_summary`,
+  `BrowserSessionBudgetEnforcer` extending the `US-020`
+  browser session worker, secret-safe payload reuse from
+  `US-041`, owner/admin REST surface for the SLO summary,
+  snapshots, and scenario runner, in-process bounded
+  load-test harness in `scripts/verify-us-044.sh`, operator
+  panel widget, and `docs/ops/performance-baseline-runbook.md`;
+  `docs/stories/epics/E05-hardening/US-044-performance-baseline-and-slo-guardrails/`;
+  `docs/product/performance-baseline-and-slo-guardrails.md`;
+  `docs/decisions/0022-performance-baseline-and-slo-guardrails.md`.
+- `US-047-internationalization-and-timezone-baseline`:
+  **implemented** — first bounded internationalization
+  and timezone baseline slice that closes
+  `NFR-I18N-001` (separate strings from code,
+  `vi-VN`/`en-US`), `NFR-I18N-002` (UTC storage +
+  user timezone display), and `NFR-I18N-003`
+  (Unicode, diacritics, normalization) and the
+  explicit follow-up committed in the production
+  readiness review from `SPEC.md` section 17;
+  durable `users.locale`, `users.timezone`,
+  `organizations.default_locale`, and
+  `organizations.default_timezone` columns, closed
+  `Locale` enum (`vi-VN`, `en-US`), bounded
+  `Timezone` IANA validation,
+  `I18nService` with `resolve_locale`,
+  `resolve_timezone`, `format_datetime`,
+  `format_date`, `format_time`,
+  `parse_user_locale`, and
+  `parse_user_timezone`, current-user REST
+  surface (`GET /me/locale`,
+  `PATCH /me/locale`) and owner/admin REST
+  surface
+  (`GET /admin/organizations/{id}/locale`,
+  `PATCH /admin/organizations/{id}/locale`),
+  audit entries for `user.locale.updated`,
+  `organization.locale.updated`, and
+  `locale.unsupported.rejected` reusing the
+  secret-safe payload contract from `US-026`
+  and `US-041`, Unicode normalization (NFC) for
+  `vi-VN` search queries, locale switcher on
+  the user menu, admin surface on the
+  organization settings page, reusable
+  `useLocale()` hook, reusable
+  `<LocalizedDatetime>`, `<LocalizedDate>`,
+  and `<LocalizedTime>` components,
+  minimum-viable `text_catalog` JSON dictionary
+  under `frontend/src/locales/{locale}.json`,
+  migration forward-safety and rollback,
+  and `scripts/verify-us-047.sh`;
+  `docs/stories/epics/E05-hardening/US-047-internationalization-and-timezone-baseline/`;
+  `docs/product/internationalization-and-timezone.md`;
+  `docs/decisions/0025-internationalization-and-timezone-baseline.md`.
+- `US-048-connector-auto-disable-and-policy-recovery-baseline`:
+  **planned** — first bounded connector
+  auto-disable and policy recovery slice that
+  closes the implicit `FR-SRC-004` + `SPEC.md`
+  11.1 kill-switch requirements; durable
+  `connector_auto_disable_rules` and
+  `connector_auto_disable_events` tables,
+  closed `AutoDisableTrigger` and
+  `AutoDisableEventStatus` enums, bounded
+  `AutoDisableService` and
+  `AutoDisableEvaluator`, human-confirmed
+  recovery flow, source-side helper
+  `evaluate_source_for_discovery` that
+  refuses to dispatch a discovery job
+  against an `auto_disabled` source, owner
+  /admin-only REST surface, bounded window
+  bound by the `EnvironmentMode` from
+  `US-040`, secret-safe payload reuse from
+  `US-041`, audit entries from `US-026`,
+  closed connector health status reuse
+  from `US-046`, RBAC contract from
+  `US-027`, source registry extension of
+  `US-003`, runbook
+  `docs/ops/connector-auto-disable-runbook.md`,
+  decision
+  `docs/decisions/0026-connector-auto-disable-and-policy-recovery-baseline.md`,
+  and `scripts/verify-us-048.sh`;
+  `docs/stories/epics/E05-hardening/US-048-connector-auto-disable-and-policy-recovery-baseline/`;
+  `docs/product/connector-auto-disable-and-recovery.md`.
+- `US-049-governed-webhook-delivery-baseline`:
+  **planned** — first bounded governed
+  webhook delivery slice that closes
+  `SPEC.md` §7.4 (Webhook with HMAC
+  signing, timestamp anti-replay, and
+  retry policy); durable
+  `webhook_subscriptions` and
+  `webhook_deliveries` tables, closed
+  `WebhookEventType` and
+  `WebhookDeliveryStatus` enums, bounded
+  `WebhookDeliveryService` with
+  `WebhookSigner` HMAC-SHA256 helper and
+  `WebhookRetryPolicy` (exponential
+  backoff + bounded jitter), bounded
+  `WebhookDispatcher` actor, bounded
+  secret rotation helper that reuses the
+  `US-003` secret manager, bounded target
+  URL allowlist that refuses private IP
+  addresses, bounded window bound by the
+  `EnvironmentMode` from `US-040`,
+  secret-safe payload reuse from
+  `US-041`, audit entries from `US-026`,
+  RBAC contract from `US-027`, runbook
+  `docs/ops/webhook-delivery-runbook.md`,
+  decision
+  `docs/decisions/0027-webhook-delivery-and-fanout-baseline.md`,
+  and `scripts/verify-us-049.sh`;
+  `docs/stories/epics/E05-hardening/US-049-governed-webhook-delivery-baseline/`;
+  `docs/product/webhook-delivery-and-event-fanout.md`.

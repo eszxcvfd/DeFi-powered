@@ -47,6 +47,16 @@ actually change.
   Prometheus scrape target, an OpenTelemetry collector, and a Sentry
   project behind the `SanitizeAlertPayload` helper and the closed
   `MetricRegistry`.
+- `backup-and-restore-operations.md`: first bounded backup and
+  restore operations contract that turns the `BackupSnapshot` metadata
+  from `real-environment-cutover-and-live-operations` into a usable
+  contract — restore rehearsal, retention enforcement, and governed
+  data deletion behind owner/admin role gates.
+- `performance-baseline-and-slo-guardrails.md`: first bounded
+  performance baseline contract that turns `NFR-PERF-001..005` into a
+  documented baseline, a set of SLO alert rules, a browser session
+  budget enforcement path, and a bounded load-test harness behind
+  the `US-041` alert evaluator and the `US-042` metric registry.
 - `live-feed-and-api-discovery.md`: first real external `API`/`RSS`/`ICS`
   discovery contract and safe canonical-event ingestion.
 - `public-website-playwright-discovery.md`: first governed `Playwright`
@@ -57,6 +67,51 @@ actually change.
   overwrite protection, and event change history.
 - `event-watchlist-and-reminders.md`: user-scoped watched events, reminder
   scheduling, and saved-event revisit workflow.
+- `event-calendar-export.md`: first bounded calendar export (ICS) contract
+  for single events, current-user watchlists, and current event filter
+  sets with a tokenized feed surface, audit entry shape, and
+  calendar `STATUS` mapping.
+- `connector-health-surface.md`: first bounded connector health surface
+  contract that turns `FR-ADM-002` into a documented per-connector health
+  snapshot, recent-errors rollup, and closed `ConnectorHealthStatus`
+  enum with sanitized payload reuse from `US-041`.
+- `connector-auto-disable-and-recovery.md`: first bounded connector
+  auto-disable and policy recovery contract that turns the implicit
+  `FR-SRC-004` + `SPEC.md` 11.1 kill-switch requirements into a
+  documented per-source auto-disable rule, per-event auto-disable
+  history, closed `AutoDisableTrigger` and `AutoDisableEventStatus`
+  enums, a bounded `AutoDisableService` and `AutoDisableEvaluator`,
+  a human-confirmed recovery flow, and a source-side helper that
+  refuses to dispatch a discovery job against an `auto_disabled`
+  source. Reuses `US-046` health surface, `US-041` alerting, `US-040`
+  `EnvironmentMode`, `US-026` audit, `US-003` source registry, and
+  `US-027` RBAC without redefining any of them.
+- `webhook-delivery-and-event-fanout.md`: first bounded governed
+  webhook delivery contract that turns `SPEC.md` §7.4 (Webhook
+  with HMAC signing, timestamp anti-replay, and retry policy) into
+  a documented per-workspace `WebhookSubscription`, per-delivery
+  `WebhookDelivery` history, closed `WebhookEventType` and
+  `WebhookDeliveryStatus` enums, a bounded `WebhookDeliveryService`
+  with `WebhookSigner` HMAC-SHA256 helper, a bounded
+  `WebhookRetryPolicy` with exponential backoff and bounded
+  jitter, a bounded `WebhookDispatcher` actor, a bounded secret
+  rotation helper that reuses the `US-003` secret manager, a
+  bounded target URL allowlist that refuses private IP addresses,
+  and a bounded window bound by the `EnvironmentMode` from
+  `US-040`. Reuses `US-003` secret manager, `US-026` audit,
+  `US-029` notifications, `US-040` `EnvironmentMode`, `US-041`
+  alerting, `US-048` auto-disable, and `US-027` RBAC without
+  redefining any of them.
+- `internationalization-and-timezone.md`: first bounded internationalization
+  and timezone contract that turns `NFR-I18N-001` (`vi-VN`/`en-US`,
+  separate strings from code), `NFR-I18N-002` (UTC storage + user
+  timezone display), and `NFR-I18N-003` (Unicode, diacritics,
+  normalization) into a closed `Locale` enum, a bounded `Timezone`
+  IANA validation, an `I18nService` seam, and a per-user and
+  per-organization locale/timezone surface with audit entries.
+- `lead-import-export.md`: first bounded CSV import/export contract for leads
+  with mapping preview, duplicate classification, create-only apply semantics,
+  and audit-safe portability.
 - `engagement-plans-and-tasks.md`: event-state-aware playbooks and task
   contracts.
 - `generated-content-and-safety.md`: reviewable AI drafts and safety rules.

@@ -32,7 +32,9 @@ This product slice covers:
 This product slice does not yet cover:
 
 - Reminder inboxes or overdue follow-up workflows.
-- CSV import/export or CRM synchronization.
+- CSV import/export. The first bounded slice is defined in
+  `docs/product/lead-import-export.md`.
+- CRM synchronization.
 - Dashboard or funnel reporting. Those read-model behaviors are defined in
   `docs/product/dashboard-overview-and-freshness.md` and
   `docs/product/funnel-reporting-and-conversion-steps.md` rather than this lead
@@ -61,7 +63,6 @@ This product slice does not yet cover:
 - Follow-up date may be set in this slice, but reminder delivery and reminder
   queues are defined in `docs/product/follow-up-reminders-and-notifications.md`
   rather than this baseline story.
-
 ## API Surface
 
 - `GET /leads`: list leads with filters and view-friendly summaries.

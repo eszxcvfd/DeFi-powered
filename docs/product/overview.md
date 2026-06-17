@@ -29,6 +29,11 @@ The current product contract also assumes:
 - the product supports an intermediary business model that opens opportunities
   for partner companies instead of assuming direct service delivery
 - target-market focus can be weighted by region
+- users can export canonical events, current-user watchlists, and current
+  event filter sets as `text/calendar` payloads behind the
+  `FR-EVT-005` calendar export surface (tokenized feed, audit entry
+  shape, and `UPCOMING`/`LIVE`/`ENDED` → `TENTATIVE`/`CONFIRMED`/
+  `CANCELLED` mapping)
 
 ## Scope Hierarchy
 
@@ -112,7 +117,7 @@ primary product promise on their own:
   and anti-spam rules.
 - Browser-assisted sessions with policy enforcement and user confirmation as a
   supporting access path, not a separate primary workflow.
-- Lead pipeline, activities, reminders, import/export, reporting, and audit.
+- Lead pipeline, activities, reminders, calendar export (ICS), reporting, and audit.
 
 ## Implementation Status
 
@@ -153,6 +158,20 @@ primary product promise on their own:
   browser-assist capability. These stories support core discovery and
   human-reviewed outreach flows; they do not redefine LiveLead as a browser
   automation platform.
+- **US-045 (Calendar export):** Per-user ICS export for canonical
+  events, current-user watchlists, and current event filter sets; bounded
+  export token with TTL, secret-safe payload reuse from `US-041`, and
+  calendar `STATUS` mapping. The slice reuses the watchlist semantics from
+  `US-030` and the export-token pattern from `US-019`; it does not redefine
+  the canonical event model or the watchlist ownership rules.
+- **US-046 (Connector health):** Per-connector health snapshot
+  with success rate, recent errors, latency p50/p95, item counts,
+  CAPTCHA rate, and last run; closed `ConnectorHealthStatus` enum
+  with bounded window by the `EnvironmentMode` from `US-040`. The slice
+  reuses the `SanitizeAlertPayload` helper from `US-041`, the
+  `MetricRegistry` from `US-042`, the `AuditService` from `US-026`,
+  and the source registry from `US-003`; it does not redefine any of
+  those contracts.
 
 ## Non-Goals For MVP
 
