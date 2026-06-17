@@ -4,6 +4,7 @@ import AppLayout from "./AppLayout";
 import AcceptInvitationPage from "./pages/AcceptInvitationPage";
 import AdminMembers from "./pages/AdminMembers";
 import AdminObservability from "./pages/AdminObservability";
+import AdminWebhooks from "./pages/AdminWebhooks";
 import CampaignDetail from "./pages/CampaignDetail";
 import CampaignList from "./pages/CampaignList";
 import CampaignWizard from "./pages/CampaignWizard";
@@ -24,7 +25,9 @@ import NotificationInboxPage from "./pages/NotificationInboxPage";
 import NotificationPreferencesPage from "./pages/NotificationPreferencesPage";
 import SignInPage from "./pages/SignInPage";
 import WatchedEventsPage from "./pages/WatchedEventsPage";
+import CalendarExportsPage from "./pages/CalendarExportsPage";
 import { AuthProvider, useAuth } from "./components/AuthProvider";
+import { I18nProvider } from "./lib/i18n";
 
 function RequireAuth({ children }: { children: ReactNode }) {
   const { loading, session } = useAuth();
@@ -54,7 +57,8 @@ function RequireAuth({ children }: { children: ReactNode }) {
 export default function App() {
   return (
     <AuthProvider>
-      <Routes>
+      <I18nProvider>
+        <Routes>
         <Route path="/sign-in" element={<SignInPage />} />
         <Route
           element={
@@ -75,6 +79,7 @@ export default function App() {
           <Route path="events/:id/content" element={<EventContentStudioPage />} />
           <Route path="events/watched" element={<WatchedEventsPage />} />
           <Route path="events" element={<EventsInboxPage />} />
+          <Route path="settings/calendar-exports" element={<CalendarExportsPage />} />
           <Route path="leads" element={<LeadsPipelinePage />} />
           <Route path="browser" element={<BrowserSessionPage />} />
           <Route path="admin" element={<AdminConnectors />} />
@@ -83,12 +88,14 @@ export default function App() {
           <Route path="admin/members" element={<AdminMembers />} />
           <Route path="admin/audit-log" element={<AdminAuditLog />} />
           <Route path="admin/observability" element={<AdminObservability />} />
+          <Route path="admin/webhooks" element={<AdminWebhooks />} />
           <Route path="notifications" element={<NotificationInboxPage />} />
           <Route path="notification-preferences" element={<NotificationPreferencesPage />} />
         </Route>
         <Route path="/invitations/accept" element={<AcceptInvitationPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+      </I18nProvider>
     </AuthProvider>
   );
 }

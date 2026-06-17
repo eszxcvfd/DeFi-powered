@@ -5,6 +5,7 @@ import { AppPageHeader } from "@/components/layout/AppPageHeader";
 import { AppPageShell, PAGE_CONTENT_CLASS } from "@/components/layout/AppPageShell";
 import { AppSection } from "@/components/layout/AppSection";
 import { Button } from "@/components/ui/button";
+import CalendarExportModalLauncher from "@/components/CalendarExportModalLauncher";
 import { Loader2 } from "lucide-react";
 
 type Filter = "all" | "with-reminder" | "without-reminder";
@@ -62,6 +63,13 @@ export default function WatchedEventsPage() {
         backLabel="Events"
         title="Watched events"
         subtitle="Your saved events. Reopen them quickly and update reminders from here."
+        actions={
+          <CalendarExportModalLauncher
+            scope="watchlist"
+            label="Subscribe in calendar"
+            testId="watched-events-subscribe-calendar"
+          />
+        }
       />
       <div className={PAGE_CONTENT_CLASS}>
         <AppSection

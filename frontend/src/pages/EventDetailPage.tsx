@@ -15,6 +15,7 @@ import { createLead } from "@/api/leads";
 import EventHistoryPanel from "@/components/EventHistoryPanel";
 import EventOverridePanel from "@/components/EventOverridePanel";
 import EventWatchPanel from "@/components/EventWatchPanel";
+import CalendarExportModalLauncher from "@/components/CalendarExportModalLauncher";
 import { AppPageHeader } from "@/components/layout/AppPageHeader";
 import { AppPageShell, PAGE_CONTENT_CLASS } from "@/components/layout/AppPageShell";
 import { AppSection } from "@/components/layout/AppSection";
@@ -124,6 +125,14 @@ export default function EventDetailPage() {
             <EventWatchPanel eventId={event.id} watch={watch} onChanged={setWatch} />
           </AppSection>
         ) : null}
+        <AppSection
+          title="Calendar export"
+          description="Bring this event into Google Calendar, Apple Calendar, or Outlook."
+          testId="event-calendar-export-section"
+          className="mb-6"
+        >
+          <CalendarExportModalLauncher eventId={event.id} scope="event" />
+        </AppSection>
         <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
           <div className="xl:col-span-5 space-y-4">
             <AppSection

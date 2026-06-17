@@ -177,7 +177,7 @@ export default function AdminAuditLog() {
         subtitle="Tenant-scoped, append-only history of governance-sensitive actions. Read-only."
         meta={
           <span className="flex items-center gap-3 text-xs">
-            <Link to="/admin/connectors" className="underline text-slate-600" data-testid="nav-admin-connectors">
+            <Link to="/admin/connectors" className="underline text-slate-600" data-testid="nav-connectors">
               Connectors
             </Link>
             <span className="text-slate-300">|</span>
@@ -187,6 +187,14 @@ export default function AdminAuditLog() {
             <span className="text-slate-300">|</span>
             <Link to="/admin/members" className="underline text-slate-600" data-testid="nav-members">
               Members & invitations
+            </Link>
+            <span className="text-slate-300">|</span>
+            <Link to="/admin/audit-log" className="underline text-slate-600 font-semibold text-slate-900" data-testid="nav-audit-log">
+              Audit log
+            </Link>
+            <span className="text-slate-300">|</span>
+            <Link to="/admin/observability" className="underline text-slate-600" data-testid="nav-observability">
+              Observability
             </Link>
             <Filter className="size-4 text-slate-400 inline" />
           </span>

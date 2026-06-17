@@ -9,11 +9,13 @@ import {
   Sparkles,
   LogOut,
   UserCircle2,
+  Calendar,
 } from "lucide-react";
 import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
 import { listReminderAlerts } from "@/api/reminders";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/components/AuthProvider";
+import { LocaleSwitcher } from "@/components/LocaleSwitcher";
 
 const nav = [
   { label: "Dashboard", to: "/", icon: LayoutDashboard, end: true },
@@ -21,6 +23,7 @@ const nav = [
   { label: "Events", to: "/events", icon: FileText, end: true },
   { label: "Leads", to: "/leads", icon: Kanban, end: true },
   { label: "Browser session", to: "/browser", icon: Monitor, end: true },
+  { label: "Calendar exports", to: "/settings/calendar-exports", icon: Calendar, end: true },
   { label: "Admin", to: "/admin", icon: Settings, end: true },
 ];
 
@@ -41,8 +44,8 @@ export default function AppLayout() {
   }
 
   return (
-    <div className="min-h-screen flex bg-[var(--color-background)]">
-      <aside className="w-60 border-r border-[var(--color-border)] bg-[var(--color-card)] p-5 flex flex-col gap-1.5">
+    <div className="h-screen w-screen flex bg-[var(--color-background)] overflow-hidden">
+      <aside className="w-60 border-r border-[var(--color-border)] bg-[var(--color-card)] p-5 flex flex-col gap-1.5 shrink-0 overflow-y-auto">
         <div className="mb-8 px-2 flex items-center gap-2">
           <div className="size-6 bg-slate-900 text-white flex items-center justify-center rounded-sm font-mono font-bold text-sm">
             L
@@ -93,11 +96,14 @@ export default function AppLayout() {
             <p className="text-[10px] font-mono text-slate-500">
               org: <span data-testid="current-user-org">{session.organization_id.slice(0, 8)}…</span>
             </p>
+            <div className="mt-2.5 pt-2.5 border-t border-slate-100">
+              <LocaleSwitcher compact={true} />
+            </div>
             <Button
               variant="ghost"
               onClick={handleSignOut}
               data-testid="sign-out-button"
-              className="mt-2 w-full h-7 text-[11px] border border-slate-200"
+              className="mt-2.5 w-full h-7 text-[11px] border border-slate-200"
             >
               <LogOut className="size-3.5" />
               Sign out

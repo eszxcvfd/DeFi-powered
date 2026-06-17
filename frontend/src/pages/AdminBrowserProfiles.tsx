@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { Chrome } from "lucide-react";
 import {
   createBrowserProfile,
   expireBrowserProfile,
@@ -52,10 +53,32 @@ export default function AdminBrowserProfiles() {
   return (
     <AppPageShell testId="admin-browser-profiles">
       <AppPageHeader
-        backTo="/admin/connectors"
-        backLabel="Connectors"
         title="Browser profiles"
         subtitle="Governed lifecycle, consent, and session reuse (US-024)"
+        meta={
+          <span className="flex items-center gap-3 text-xs">
+            <Link to="/admin/connectors" className="underline text-slate-600" data-testid="nav-connectors">
+              Connectors
+            </Link>
+            <span className="text-slate-300">|</span>
+            <Link to="/admin/browser-profiles" className="underline text-slate-600 font-semibold text-slate-900" data-testid="nav-browser-profiles">
+              Browser profiles
+            </Link>
+            <span className="text-slate-300">|</span>
+            <Link to="/admin/members" className="underline text-slate-600" data-testid="nav-members">
+              Members & invitations
+            </Link>
+            <span className="text-slate-300">|</span>
+            <Link to="/admin/audit-log" className="underline text-slate-600" data-testid="nav-audit-log">
+              Audit log
+            </Link>
+            <span className="text-slate-300">|</span>
+            <Link to="/admin/observability" className="underline text-slate-600" data-testid="nav-observability">
+              Observability
+            </Link>
+            <Chrome className="size-4 text-slate-400 inline" />
+          </span>
+        }
       />
       <div className={PAGE_CONTENT_CLASS}>
         <AppSection title="Create profile" testId="browser-profile-create">

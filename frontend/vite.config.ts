@@ -83,12 +83,24 @@ function adminProxyBypass(req: { method?: string; url?: string; headers?: Record
   if (path.startsWith("/admin/audit-logs")) return null;
   if (path.startsWith("/admin/observability/")) return null;
   if (path.startsWith("/admin/notifications")) return null;
+  if (path.startsWith("/admin/backup-snapshots")) return null;
+  if (path.startsWith("/admin/backup-restore-runs")) return null;
+  if (path.startsWith("/admin/retention/")) return null;
+  if (path.startsWith("/admin/data-deletion")) return null;
+  if (path.startsWith("/admin/performance")) return null;
+  if (path.startsWith("/admin/cutover/")) return null;
+  if (path.startsWith("/admin/connectors/")) return null;
+  if (path.startsWith("/admin/organizations/")) return null;
   if (ADMIN_CONNECTOR_ID.test(path)) return null;
   return path;
 }
 
 const proxyConfig = {
   "/health": API,
+  "/metrics": API,
+  "/me": API,
+  "/calendar-export-tokens": API,
+  "/calendar-export": API,
   "/auth": {
     target: API,
     bypass(req: { method?: string; url?: string; headers?: Record<string, string> }) {
